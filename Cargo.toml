@@ -1,0 +1,18 @@
+[package]
+name = "cargo-ui"
+version = "0.1.0"
+authors = ["SixtyFPS <info@sixtyfps.io>"]
+edition = "2018"
+build = "build.rs"
+license = "GPL-3.0-only"
+description = "GUI for cargo"
+repository = "https://github.com/sixtyfpsui/cargo-ui"
+
+[dependencies]
+sixtyfps = "0.1.0"
+tokio = { version = "1", features= ["full"] }
+cargo_metadata = "0.14"
+
+[build-dependencies]
+sixtyfps-build = "0.1.0"
+

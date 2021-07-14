@@ -1,0 +1,39 @@
+import {ComboBox, VerticalBox, HorizontalBox, Button} from "sixtyfps_widgets.60";
+
+CargoUI := Window {
+    title: "Cargo UI";
+    preferred_height: 200px;
+    preferred_width: 200px;
+
+    property <string> status;
+    property <[string]> packages;
+    callback action(string, string, string);
+
+    VerticalBox {
+        alignment: start;
+        HorizontalBox {
+            alignment: start;
+            Text { text: "package: "; }
+            package_cb := ComboBox { model: packages; }
+            Rectangle { width: parent.spacing*3; }
+            Text { text: "mode: "; }
+            mode_cb := ComboBox { current_value: "debug"; model: ["debug", "release"]; }
+        }
+        HorizontalBox {
+            alignment: start;
+            Button {
+                text: "🚀 Run";
+                clicked => { action("run", package_cb.current_value, mode_cb.current_value); }
+            }
+            Button {
+                text: "🏗️ Build";
+                clicked => { action("build", package_cb.current_value, mode_cb.current_value); }
+            }
+            Button {
+                text: "✅ Check";
+                clicked => { action("check", package_cb.current_value, mode_cb.current_value); }
+            }
+        }
+        Text { text: status; wrap: word_wrap; overflow: elide; }
+    }
+}
