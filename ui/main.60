@@ -40,6 +40,7 @@ BuildingPane := Rectangle {
             alignment: space_between;
             cancel_btn := Button {
                 text: "❌ Cancel";
+                height: min_height;
             }
         }
     }
