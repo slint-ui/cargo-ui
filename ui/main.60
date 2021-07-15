@@ -4,6 +4,13 @@ struct Diag := {
    message: string,
 }
 
+struct Action := {
+    command: string,
+    package: string,
+    profile: string,
+    extra: string, // bin or test name
+}
+
 BuildingPane := Rectangle {
     callback cancel <=> cancel_btn.clicked;
     property status <=> status_text.text;
@@ -46,35 +53,92 @@ CargoUI := Window {
 
     property <string> status;
     property <[string]> packages;
-    callback action(string, string, string);
+    property <[string]> extra_run;
+    property <[string]> extra_test;
+    callback action(Action);
     callback cancel;
     property <bool> is_building : false;
     property <[Diag]> errors;
 
+    // required because of a bug in sixtyfps 0.1.0
+    property <Action> ignore_me;
+
     VerticalBox {
-        alignment: start;
-        HorizontalBox {
-            alignment: start;
-            Text { text: "package: "; }
-            package_cb := ComboBox { model: packages; }
-            Rectangle { width: parent.spacing*3; }
-            Text { text: "mode: "; }
-            mode_cb := ComboBox { current_value: "debug"; model: ["debug", "release"]; }
-        }
+        //alignment: start;
+        Text { text: "Cargo UI"; }
+
         HorizontalBox {
             alignment: start;
             Button {
                 text: "🚀 Run";
-                clicked => { action("run", package_cb.current_value, mode_cb.current_value); }
+                clicked => {
+                    action({
+                        command: "run",
+                        package: package_cb.current_value,
+                        profile: mode_cb.current_value,
+                        extra: bin_cb.current_value
+                    });
+                }
             }
+            bin_cb := ComboBox { model: extra_run; }
+        }
+        HorizontalBox {
+            alignment: start;
             Button {
                 text: "🏗️ Build";
-                clicked => { action("build", package_cb.current_value, mode_cb.current_value); }
+                clicked => {
+                    action({
+                        command: "build",
+                        package: package_cb.current_value,
+                        profile: mode_cb.current_value,
+                        extra: ""
+                    });
+                }
             }
+        }
+        HorizontalBox {
+            alignment: start;
             Button {
-                text: "✅ Check";
-                clicked => { action("check", package_cb.current_value, mode_cb.current_value); }
+                text: "👍 Check";
+                clicked => {
+                    action({
+                        command: "check",
+                        package: package_cb.current_value,
+                        profile: mode_cb.current_value,
+                        extra: ""
+                    });
+                }
             }
+        }
+        HorizontalBox {
+            alignment: start;
+            Button {
+                text: "🧪 Test";
+                clicked => {
+                    action({
+                        command: "test",
+                        package: package_cb.current_value,
+                        profile: mode_cb.current_value,
+                        extra: test_cb.current_value,
+                    });
+                }
+            }
+            test_cb := ComboBox { model: extra_test; }
+        }
+
+        Rectangle { }
+
+
+        HorizontalBox {
+            //alignment: start;
+            Text { text: "Package:"; }
+            package_cb := ComboBox { model: packages; }
+            Rectangle { }
+            Text { text: "Profile: "; }
+            mode_cb := ComboBox { current_value: "debug"; model: ["debug", "release"]; }
+            Rectangle { }
+            //Text { text: "Toolchain: "; }
+            //profile_cb := ComboBox { model: ["stable", "nightly"]; }
         }
         Text { text: status; wrap: word_wrap; overflow: elide; }
     }

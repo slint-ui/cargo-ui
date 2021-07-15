@@ -1,21 +1,15 @@
 use serde::Deserialize;
 use sixtyfps::{Model, ModelHandle, SharedString, VecModel};
 use std::rc::Rc;
-use tokio::{
-    io::{AsyncBufReadExt, BufReader},
-    sync::mpsc::UnboundedReceiver,
-};
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::sync::mpsc::UnboundedReceiver;
 
 sixtyfps::include_modules!();
 
 #[derive(Debug)]
 enum Message {
     Quit,
-    Action {
-        cmd: SharedString,
-        package: SharedString,
-        mode: SharedString,
-    },
+    Action(Action),
     Cancel,
 }
 
@@ -33,14 +27,7 @@ fn main() {
         read_metadata(handle_weak);
     });
     let send = s.clone();
-    handle.on_action(move |cmd, target, mode| {
-        send.send(Message::Action {
-            cmd,
-            package: target,
-            mode,
-        })
-        .unwrap()
-    });
+    handle.on_action(move |action| send.send(Message::Action(action)).unwrap());
     let send = s.clone();
     handle.on_cancel(move || send.send(Message::Cancel).unwrap());
     handle.run();
@@ -53,12 +40,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
     let mut run_cargo_future = None;
     if false {
         // Just to help type inference of run_cargo_future
-        run_cargo_future = Some(Box::pin(run_cargo(
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            handle.clone(),
-        )));
+        run_cargo_future = Some(Box::pin(run_cargo(Default::default(), handle.clone())));
     }
     loop {
         let m = if let Some(fut) = &mut run_cargo_future {
@@ -79,8 +61,8 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
         match m {
             None => return,
             Some(Message::Quit) => return,
-            Some(Message::Action { cmd, package, mode }) => {
-                run_cargo_future = Some(Box::pin(run_cargo(cmd, package, mode, handle.clone())));
+            Some(Message::Action(action)) => {
+                run_cargo_future = Some(Box::pin(run_cargo(action, handle.clone())));
             }
             Some(Message::Cancel) => {
                 run_cargo_future = None;
@@ -89,12 +71,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
     }
 }
 
-async fn run_cargo(
-    cmd: SharedString,
-    _package: SharedString,
-    mode: SharedString,
-    handle: sixtyfps::Weak<CargoUI>,
-) -> tokio::io::Result<()> {
+async fn run_cargo(action: Action, handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Result<()> {
     // FIXME: Would be nice if we did not need a thread_local
     thread_local! {static DIAG_MODEL: std::cell::RefCell<Rc<VecModel<Diag>>> = Default::default()}
 
@@ -127,9 +104,15 @@ async fn run_cargo(
     // FIXME! we want to do that asynchronously
     // Also, we should not just launch cargo.
     let mut cargo_command = tokio::process::Command::new("cargo");
-    cargo_command.arg(cmd.as_str());
-    if mode == "release" {
+    cargo_command.arg(action.command.as_str());
+    if action.profile == "release" {
         cargo_command.arg("--release");
+    }
+    if action.command == "run" && !action.extra.is_empty() {
+        cargo_command.arg("--bin").arg(action.extra.as_str());
+    }
+    if !action.package.is_empty() {
+        cargo_command.arg("-p").arg(action.package.as_str());
     }
     let mut res = cargo_command
         .args(&["--message-format", "json"])
@@ -206,17 +189,36 @@ fn read_metadata(handle: sixtyfps::Weak<CargoUI>) {
         None => {}
     };
     let metadata = cmd.exec().unwrap();
-    let targets = metadata
+    let mut packages = vec![SharedString::default()]; // keep one empty row
+    let mut run_target = Vec::new();
+    let mut test_target = Vec::new();
+    for p in metadata
         .packages
         .iter()
-        .map(|p| p.name.as_str().into())
-        .collect::<Vec<SharedString>>();
-
+        .filter(|p| metadata.workspace_members.contains(&p.id))
+    {
+        packages.push(p.name.as_str().into());
+        for t in &p.targets {
+            if t.kind.iter().any(|x| x == "bin") {
+                run_target.push(SharedString::from(t.name.as_str()));
+            } else if t.kind.iter().any(|x| x == "example") {
+                run_target.push(SharedString::from(format!("{} (example)", t.name).as_str()));
+            } else if t.kind.iter().any(|x| x == "test") {
+                test_target.push(SharedString::from(t.name.as_str()));
+            }
+        }
+    }
     sixtyfps::invoke_from_event_loop(move || {
         if let Some(h) = handle.upgrade() {
             h.set_packages(ModelHandle::from(
-                Rc::new(VecModel::from(targets)) as Rc<dyn Model<Data = SharedString>>
-            ))
+                Rc::new(VecModel::from(packages)) as Rc<dyn Model<Data = SharedString>>
+            ));
+            h.set_extra_run(ModelHandle::from(
+                Rc::new(VecModel::from(run_target)) as Rc<dyn Model<Data = SharedString>>
+            ));
+            h.set_extra_test(ModelHandle::from(
+                Rc::new(VecModel::from(test_target)) as Rc<dyn Model<Data = SharedString>>
+            ));
         }
     });
 }
