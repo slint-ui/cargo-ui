@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use sixtyfps::{Model, ModelHandle, SharedString, VecModel};
 use std::rc::Rc;
 use tokio::{
@@ -132,28 +133,39 @@ async fn run_cargo(
     }
     let mut res = cargo_command
         .args(&["--message-format", "json"])
-        //.stdout(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .kill_on_drop(true)
         .spawn()?;
 
-    //let mut stdout = BufReader::new(res.stdout.take().unwrap()).lines();
+    let mut stdout = BufReader::new(res.stdout.take().unwrap()).lines();
     let mut stderr = BufReader::new(res.stderr.take().unwrap()).lines();
-    while let Some(line) = stderr.next_line().await? {
-        let line = SharedString::from(line.as_str());
-        println!("Line: {}", line);
-
-        let h = handle.clone();
-        sixtyfps::invoke_from_event_loop(move || {
-            if let Some(h) = h.upgrade() {
-                DIAG_MODEL.with(|model| {
-                    model.borrow().push(Diag {
-                        message: line.clone(),
-                    })
+    loop {
+        tokio::select! {
+            line = stderr.next_line() => {
+                let line = if let Some(line) = line? { line } else { break };
+                let h = handle.clone();
+                sixtyfps::invoke_from_event_loop(move || {
+                    if let Some(h) = h.upgrade() {
+                        h.set_status(line.as_str().into());
+                    }
                 });
-                h.set_status(line);
             }
-        });
+            line = stdout.next_line() => {
+                let line = if let Some(line) = line? { line } else { break };
+                let mut deserializer = serde_json::Deserializer::from_str(&line);
+                deserializer.disable_recursion_limit();
+                let msg = cargo_metadata::Message::deserialize(&mut deserializer).unwrap_or(cargo_metadata::Message::TextLine(line));
+
+                if let Some(diag) = cargo_message_to_diag(msg){
+                    sixtyfps::invoke_from_event_loop(move || {
+                        DIAG_MODEL.with(|model| {
+                            model.borrow().push(diag)
+                        });
+                    });
+                }
+            }
+        }
     }
 
     sixtyfps::invoke_from_event_loop(move || {
@@ -163,6 +175,22 @@ async fn run_cargo(
     });
 
     Ok(())
+}
+
+fn cargo_message_to_diag(msg: cargo_metadata::Message) -> Option<Diag> {
+    match msg {
+        cargo_metadata::Message::CompilerMessage(msg) => {
+            let message = msg
+                .message
+                .rendered
+                .unwrap_or(msg.message.message)
+                .as_str()
+                .into();
+            let diag = Diag { message };
+            Some(diag)
+        }
+        _ => None,
+    }
 }
 
 fn read_metadata(handle: sixtyfps::Weak<CargoUI>) {

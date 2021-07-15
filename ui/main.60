@@ -20,7 +20,7 @@ BuildingPane := Rectangle {
         Flickable {
             VerticalBox {
                 alignment: start;
-                for error in errors : Rectangle {
+                for error in errors : HorizontalLayout {
                     Text {
                         color: #833;
                         text: error.message;
@@ -41,8 +41,8 @@ BuildingPane := Rectangle {
 
 CargoUI := Window {
     title: "Cargo UI";
-    preferred_height: 200px;
-    preferred_width: 200px;
+    preferred_height: 500px;
+    preferred_width: 300px;
 
     property <string> status;
     property <[string]> packages;

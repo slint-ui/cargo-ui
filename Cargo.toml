@@ -12,6 +12,8 @@ repository = "https://github.com/sixtyfpsui/cargo-ui"
 sixtyfps = "0.1.0"
 tokio = { version = "1", features= ["full"] }
 cargo_metadata = "0.14"
+serde_json = "1"
+serde = "1"
 
 [build-dependencies]
 sixtyfps-build = "0.1.0"
