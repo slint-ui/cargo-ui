@@ -1,5 +1,44 @@
 import {ComboBox, VerticalBox, HorizontalBox, Button} from "sixtyfps_widgets.60";
 
+struct Diag := {
+   message: string,
+}
+
+BuildingPane := Rectangle {
+    callback cancel <=> cancel_btn.clicked;
+    property status <=> status_text.text;
+    property <[Diag]> errors: [
+        {message: "Hallo"}, {message: "Hallo"}, {message: "Hallo"}
+    ];
+
+    // capture all clicks
+    TouchArea {}
+
+    VerticalBox {
+        status_text := Text { }
+
+        Flickable {
+            VerticalBox {
+                alignment: start;
+                for error in errors : Rectangle {
+                    Text {
+                        color: #833;
+                        text: error.message;
+                    }
+                }
+            }
+        }
+
+        HorizontalBox {
+            alignment: space_between;
+            cancel_btn := Button {
+                text: "❌ Cancel";
+            }
+        }
+    }
+
+}
+
 CargoUI := Window {
     title: "Cargo UI";
     preferred_height: 200px;
@@ -8,6 +47,9 @@ CargoUI := Window {
     property <string> status;
     property <[string]> packages;
     callback action(string, string, string);
+    callback cancel;
+    property <bool> is_building : false;
+    property <[Diag]> errors;
 
     VerticalBox {
         alignment: start;
@@ -35,5 +77,17 @@ CargoUI := Window {
             }
         }
         Text { text: status; wrap: word_wrap; overflow: elide; }
+    }
+
+    animated := Rectangle {
+        width: 100%; height: 100%;
+        y: is_building ? 0 : parent.height;
+        animate y { duration: 250ms; easing: ease; }
+        if (animated.y < root.height): BuildingPane {
+            background: root.background;
+            status: root.status;
+            errors: root.errors;
+            cancel => { root.cancel() }
+        }
     }
 }

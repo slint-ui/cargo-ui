@@ -1,6 +1,9 @@
 use sixtyfps::{Model, ModelHandle, SharedString, VecModel};
 use std::rc::Rc;
-use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::{
+    io::{AsyncBufReadExt, BufReader},
+    sync::mpsc::UnboundedReceiver,
+};
 
 sixtyfps::include_modules!();
 
@@ -12,6 +15,7 @@ enum Message {
         package: SharedString,
         mode: SharedString,
     },
+    Cancel,
 }
 
 fn main() {
@@ -36,6 +40,8 @@ fn main() {
         })
         .unwrap()
     });
+    let send = s.clone();
+    handle.on_cancel(move || send.send(Message::Cancel).unwrap());
     handle.run();
     let _ = s.send(Message::Quit);
     metadata_thread.join().unwrap();
@@ -43,49 +49,120 @@ fn main() {
 }
 
 async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<CargoUI>) {
-    while let Some(m) = r.recv().await {
+    let mut run_cargo_future = None;
+    if false {
+        // Just to help type inference of run_cargo_future
+        run_cargo_future = Some(Box::pin(run_cargo(
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            handle.clone(),
+        )));
+    }
+    loop {
+        let m = if let Some(fut) = &mut run_cargo_future {
+            tokio::select! {
+                m = r.recv() => {
+                    m
+                }
+                res = fut => {
+                    res.unwrap();
+                    run_cargo_future = None;
+                    r.recv().await
+                }
+            }
+        } else {
+            r.recv().await
+        };
+
         match m {
-            Message::Quit => return,
-            Message::Action { cmd, package, mode } => {
-                run_cargo(cmd, package, mode, handle.clone());
+            None => return,
+            Some(Message::Quit) => return,
+            Some(Message::Action { cmd, package, mode }) => {
+                run_cargo_future = Some(Box::pin(run_cargo(cmd, package, mode, handle.clone())));
+            }
+            Some(Message::Cancel) => {
+                run_cargo_future = None;
             }
         }
     }
 }
 
-fn run_cargo(
+async fn run_cargo(
     cmd: SharedString,
     _package: SharedString,
     mode: SharedString,
     handle: sixtyfps::Weak<CargoUI>,
-) {
+) -> tokio::io::Result<()> {
+    // FIXME: Would be nice if we did not need a thread_local
+    thread_local! {static DIAG_MODEL: std::cell::RefCell<Rc<VecModel<Diag>>> = Default::default()}
+
+    let h = handle.clone();
+    sixtyfps::invoke_from_event_loop(move || {
+        if let Some(h) = h.upgrade() {
+            h.set_status("".into());
+            h.set_is_building(true);
+            let error_model = Rc::new(VecModel::<Diag>::default());
+            h.set_errors(ModelHandle::from(
+                error_model.clone() as Rc<dyn Model<Data = Diag>>
+            ));
+            DIAG_MODEL.with(|tl| tl.replace(error_model));
+        }
+    });
+
+    struct ResetIsBuilding(sixtyfps::Weak<CargoUI>);
+    impl Drop for ResetIsBuilding {
+        fn drop(&mut self) {
+            let h = self.0.clone();
+            sixtyfps::invoke_from_event_loop(move || {
+                if let Some(h) = h.upgrade() {
+                    h.set_is_building(false)
+                }
+            })
+        }
+    }
+    let _reset_is_building = ResetIsBuilding(handle.clone());
+
     // FIXME! we want to do that asynchronously
     // Also, we should not just launch cargo.
-    let mut cargo_command = std::process::Command::new("cargo");
+    let mut cargo_command = tokio::process::Command::new("cargo");
     cargo_command.arg(cmd.as_str());
     if mode == "release" {
         cargo_command.arg("--release");
     }
-    let res = cargo_command
+    let mut res = cargo_command
         .args(&["--message-format", "json"])
-        .stdout(std::process::Stdio::piped())
+        //.stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
-        .spawn()
-        .unwrap()
-        .wait_with_output()
-        .unwrap();
+        .kill_on_drop(true)
+        .spawn()?;
 
-    let message = SharedString::from(format!(
-        "{}\n{}",
-        std::str::from_utf8(&res.stdout).unwrap(),
-        std::str::from_utf8(&res.stderr).unwrap()
-    ));
+    //let mut stdout = BufReader::new(res.stdout.take().unwrap()).lines();
+    let mut stderr = BufReader::new(res.stderr.take().unwrap()).lines();
+    while let Some(line) = stderr.next_line().await? {
+        let line = SharedString::from(line.as_str());
+        println!("Line: {}", line);
+
+        let h = handle.clone();
+        sixtyfps::invoke_from_event_loop(move || {
+            if let Some(h) = h.upgrade() {
+                DIAG_MODEL.with(|model| {
+                    model.borrow().push(Diag {
+                        message: line.clone(),
+                    })
+                });
+                h.set_status(line);
+            }
+        });
+    }
 
     sixtyfps::invoke_from_event_loop(move || {
         if let Some(h) = handle.upgrade() {
-            h.set_status(message)
+            h.set_status("Finished".into());
         }
     });
+
+    Ok(())
 }
 
 fn read_metadata(handle: sixtyfps::Weak<CargoUI>) {
