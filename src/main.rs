@@ -72,7 +72,7 @@ fn run_cargo(
         .stderr(std::process::Stdio::piped())
         .spawn()
         .unwrap()
-        .wait_with_output(Erro)
+        .wait_with_output()
         .unwrap();
 
     let message = SharedString::from(format!(
