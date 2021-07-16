@@ -202,6 +202,14 @@ fn cargo_message_to_diag(msg: cargo_metadata::Message) -> Option<Diag> {
             };
             Some(diag)
         }
+        cargo_metadata::Message::TextLine(line) => {
+            let diag = Diag {
+                short: line.into(),
+                expanded: Default::default(),
+                level: 0,
+            };
+            Some(diag)
+        }
         _ => None,
     }
 }

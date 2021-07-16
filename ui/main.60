@@ -61,6 +61,8 @@ BuildingPane := Rectangle {
                                 "";
                             }
                             text: !expanded ? (level_txt + error.short) : error.expanded;
+                            wrap: word_wrap;
+
                         }
                     }
                 }
