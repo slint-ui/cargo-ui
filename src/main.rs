@@ -202,7 +202,11 @@ fn cargo_message_to_diag(msg: cargo_metadata::Message) -> Option<Diag> {
 
 fn default_manifest() -> SharedString {
     // skip the "ui" arg in case we are invoked with `cargo ui`
-    match std::env::args().skip(1).skip_while(|a| a == "ui").next() {
+    match std::env::args()
+        .skip(1)
+        .skip_while(|a| a == "ui" || a.starts_with('-'))
+        .next()
+    {
         Some(p) => p.as_str().into(),
         None => {
             let path = Path::new("Cargo.toml");
