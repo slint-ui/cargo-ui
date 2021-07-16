@@ -1,3 +1,5 @@
+use cargo_metadata::diagnostic::DiagnosticLevel;
+
 use serde::Deserialize;
 use sixtyfps::{Model, ModelHandle, SharedString, VecModel};
 use std::future::Future;
@@ -186,13 +188,18 @@ async fn run_cargo(
 fn cargo_message_to_diag(msg: cargo_metadata::Message) -> Option<Diag> {
     match msg {
         cargo_metadata::Message::CompilerMessage(msg) => {
-            let message = msg
-                .message
-                .rendered
-                .unwrap_or(msg.message.message)
-                .as_str()
-                .into();
-            let diag = Diag { message };
+            let diag = Diag {
+                short: msg.message.message.as_str().into(),
+                expanded: msg.message.rendered.unwrap_or_default().as_str().into(),
+                level: match msg.message.level {
+                    DiagnosticLevel::Error => 1,
+                    DiagnosticLevel::Warning => 2,
+                    DiagnosticLevel::FailureNote => 3,
+                    DiagnosticLevel::Note => 3,
+                    DiagnosticLevel::Help => 3,
+                    _ => 0,
+                },
+            };
             Some(diag)
         }
         _ => None,
@@ -305,9 +312,12 @@ fn show_open_dialog(manifest: SharedString) -> SharedString {
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 fn show_open_dialog(manifest: SharedString) -> SharedString {
     let path = std::path::PathBuf::from(manifest.as_str());
-    let directory = path.parent().map(|dir| dir.to_string_lossy().to_owned()).unwrap_or_default();
+    let directory = path
+        .parent()
+        .map(|dir| dir.to_string_lossy().to_owned())
+        .unwrap_or_default();
     let res = rfd::FileDialog::new()
-    .set_directory(directory.as_ref())
+        .set_directory(directory.as_ref())
         .pick_file();
 
     match res {

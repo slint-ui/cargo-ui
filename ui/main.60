@@ -1,7 +1,10 @@
-import {ComboBox, VerticalBox, HorizontalBox, Button, LineEdit} from "sixtyfps_widgets.60";
+import {ComboBox, VerticalBox, HorizontalBox, Button, LineEdit, ListView} from "sixtyfps_widgets.60";
 
 struct Diag := {
-   message: string,
+    short: string,
+    expanded: string,
+    level: int, // 0 = other, 1 = error, 2 = warning, 3 = note
+
 }
 
 struct Action := {
@@ -13,9 +16,15 @@ struct Action := {
 
 BuildingPane := Rectangle {
     callback cancel <=> cancel_btn.clicked;
+    callback back <=> back_btn.clicked;
+    property <bool> is_building;
     property status <=> status_text.text;
     property <[Diag]> errors: [
-        {message: "Hallo"}, {message: "Hallo"}, {message: "Hallo"}
+        // just some placeholder for testing
+        {short: "Hallo", expanded: "Hello\nworld", level: 1 },
+        {short: "Hallo", expanded: "Hello\nworld", level: 2 },
+        {short: "Hallo", expanded: "Hello\nworld", level: 3 },
+        {short: "Hallo", expanded: "Hello\nworld", level: 0 }
     ];
 
     // capture all clicks
@@ -24,27 +33,53 @@ BuildingPane := Rectangle {
     VerticalBox {
         status_text := Text { }
 
-        Flickable {
+        ListView {
+            viewport_width: width;
             VerticalBox {
                 alignment: start;
-                for error in errors : HorizontalLayout {
-                    Text {
-                        color: #833;
-                        text: error.message;
+                for error in errors : TouchArea {
+                    property<bool> expanded;
+                    clicked => { expanded = !expanded }
+                    enabled: error.expanded != "";
+                    animate height { duration: 150ms; easing: ease; }
+                    HorizontalBox {
+                        if (enabled) : Text {
+                            text: !expanded ? "▶": "▼";
+                        }
+                        Text {
+                            horizontal_stretch: 1;
+                            color: {
+                                error.level == 1 ? #a44 :
+                                error.level == 2 ? #aa4 :
+                                error.level == 3 ? #44a :
+                                #444;
+                            };
+                            property <string> level_txt: {
+                                error.level == 1 ? "error: " :
+                                error.level == 2 ? "warning: " :
+                                error.level == 3 ? "info: " :
+                                "";
+                            }
+                            text: !expanded ? (level_txt + error.short) : error.expanded;
+                        }
                     }
                 }
             }
         }
-
         HorizontalBox {
             alignment: space_between;
             cancel_btn := Button {
                 text: "❌ Cancel";
                 height: min_height;
             }
+            back_btn := Button {
+                enabled: !is_building;
+                text: "🔙 Back";
+                height: min_height;
+            }
+
         }
     }
-
 }
 
 CargoUI := Window {
@@ -64,6 +99,7 @@ CargoUI := Window {
     property <string> manifest_path <=> le_manifest.text;
     callback reload_manifest(string);
     callback show_open_dialog;
+    property <bool> build_pane_visible;
 
     // required because of a bug in sixtyfps 0.1.0 (fixed by e633ee82)
     property <Action> ignore_me;
@@ -92,6 +128,7 @@ CargoUI := Window {
                 text: "🚀 Run";
                 enabled: root.workspace_valid;
                 clicked => {
+                    build_pane_visible = true;
                     action({
                         command: "run",
                         package: package_cb.current_value,
@@ -108,6 +145,7 @@ CargoUI := Window {
                 text: "🏗️ Build";
                 enabled: root.workspace_valid;
                 clicked => {
+                    build_pane_visible = true;
                     action({
                         command: "build",
                         package: package_cb.current_value,
@@ -123,6 +161,7 @@ CargoUI := Window {
                 text: "👍 Check";
                 enabled: root.workspace_valid;
                 clicked => {
+                    build_pane_visible = true;
                     action({
                         command: "check",
                         package: package_cb.current_value,
@@ -138,6 +177,7 @@ CargoUI := Window {
                 text: "🧪 Test";
                 enabled: root.workspace_valid;
                 clicked => {
+                    build_pane_visible = true;
                     action({
                         command: "test",
                         package: package_cb.current_value,
@@ -168,13 +208,15 @@ CargoUI := Window {
 
     animated := Rectangle {
         width: 100%; height: 100%;
-        y: is_building ? 0 : parent.height;
+        y: is_building || build_pane_visible ? 0 : parent.height;
         animate y { duration: 250ms; easing: ease; }
         if (animated.y < root.height): BuildingPane {
             background: root.background;
             status: root.status;
             errors: root.errors;
             cancel => { root.cancel() }
+            back => { build_pane_visible = false; }
+            is_building: root.is_building;
         }
     }
 }
