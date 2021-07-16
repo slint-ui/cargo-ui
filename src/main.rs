@@ -179,6 +179,9 @@ async fn run_cargo(
     sixtyfps::invoke_from_event_loop(move || {
         if let Some(h) = handle.upgrade() {
             h.set_status("Finished".into());
+            if DIAG_MODEL.with(|model| model.borrow().row_count()) == 0 {
+                h.set_build_pane_visible(false);
+            }
         }
     });
 
