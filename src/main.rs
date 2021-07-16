@@ -130,7 +130,11 @@ async fn run_cargo(
         cargo_command.arg("--release");
     }
     if action.command == "run" && !action.extra.is_empty() {
-        cargo_command.arg("--bin").arg(action.extra.as_str());
+        if let Some(example) = action.extra.strip_suffix(" (example)") {
+            cargo_command.arg("--example").arg(example);
+        } else {
+            cargo_command.arg("--bin").arg(action.extra.as_str());
+        }
     }
     if !action.package.is_empty() {
         cargo_command.arg("-p").arg(action.package.as_str());
