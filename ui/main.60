@@ -1,4 +1,4 @@
-import {ComboBox, VerticalBox, HorizontalBox, Button} from "sixtyfps_widgets.60";
+import {ComboBox, VerticalBox, HorizontalBox, Button, LineEdit} from "sixtyfps_widgets.60";
 
 struct Diag := {
    message: string,
@@ -60,8 +60,12 @@ CargoUI := Window {
     callback cancel;
     property <bool> is_building : false;
     property <[Diag]> errors;
+    property <bool> workspace_valid : true;
+    property <string> manifest_path <=> le_manifest.text;
+    callback reload_manifest(string);
+    callback show_open_dialog;
 
-    // required because of a bug in sixtyfps 0.1.0
+    // required because of a bug in sixtyfps 0.1.0 (fixed by e633ee82)
     property <Action> ignore_me;
 
     VerticalBox {
@@ -69,9 +73,24 @@ CargoUI := Window {
         Text { text: "Cargo UI"; }
 
         HorizontalBox {
+            Text { text: "Manifest:"; }
+            le_manifest := LineEdit {
+                accepted => { root.reload_manifest(le_manifest.text); }
+                horizontal_stretch: 1;
+            }
+            Button {
+                text: "📂";
+                clicked => { root.reload_manifest(le_manifest.text); }
+            }
+        }
+
+        Rectangle { height: 40px; }
+
+        HorizontalBox {
             alignment: start;
             Button {
                 text: "🚀 Run";
+                enabled: root.workspace_valid;
                 clicked => {
                     action({
                         command: "run",
@@ -81,12 +100,13 @@ CargoUI := Window {
                     });
                 }
             }
-            bin_cb := ComboBox { model: extra_run; }
+            bin_cb := ComboBox { model: extra_run; enabled: root.workspace_valid; }
         }
         HorizontalBox {
             alignment: start;
             Button {
                 text: "🏗️ Build";
+                enabled: root.workspace_valid;
                 clicked => {
                     action({
                         command: "build",
@@ -101,6 +121,7 @@ CargoUI := Window {
             alignment: start;
             Button {
                 text: "👍 Check";
+                enabled: root.workspace_valid;
                 clicked => {
                     action({
                         command: "check",
@@ -115,6 +136,7 @@ CargoUI := Window {
             alignment: start;
             Button {
                 text: "🧪 Test";
+                enabled: root.workspace_valid;
                 clicked => {
                     action({
                         command: "test",
@@ -124,7 +146,7 @@ CargoUI := Window {
                     });
                 }
             }
-            test_cb := ComboBox { model: extra_test; }
+            test_cb := ComboBox { model: extra_test; enabled: root.workspace_valid; }
         }
 
         Rectangle { }
@@ -133,10 +155,10 @@ CargoUI := Window {
         HorizontalBox {
             //alignment: start;
             Text { text: "Package:"; }
-            package_cb := ComboBox { model: packages; }
+            package_cb := ComboBox { model: packages; enabled: root.workspace_valid; }
             Rectangle { }
             Text { text: "Profile: "; }
-            mode_cb := ComboBox { current_value: "debug"; model: ["debug", "release"]; }
+            mode_cb := ComboBox { current_value: "debug"; model: ["debug", "release"]; enabled: root.workspace_valid; }
             Rectangle { }
             //Text { text: "Toolchain: "; }
             //profile_cb := ComboBox { model: ["stable", "nightly"]; }
