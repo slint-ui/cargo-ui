@@ -121,9 +121,8 @@ async fn run_cargo(
     }
     let _reset_is_building = ResetIsBuilding(handle.clone());
 
-    // FIXME! we want to do that asynchronously
-    // Also, we should not just launch cargo.
-    let mut cargo_command = tokio::process::Command::new("cargo");
+    let cargo_path = std::env::var("CARGO").unwrap_or_else(|_| "cargo".into());
+    let mut cargo_command = tokio::process::Command::new(cargo_path);
     cargo_command.arg(action.command.as_str());
     cargo_command.arg("--manifest-path").arg(manifest.as_str());
     if action.profile == "release" {
@@ -202,7 +201,8 @@ fn cargo_message_to_diag(msg: cargo_metadata::Message) -> Option<Diag> {
 }
 
 fn default_manifest() -> SharedString {
-    match std::env::args().skip(1).next() {
+    // skip the "ui" arg in case we are invoked with `cargo ui`
+    match std::env::args().skip(1).skip_while(|a| a == "ui").next() {
         Some(p) => p.as_str().into(),
         None => {
             let path = Path::new("Cargo.toml");
