@@ -1,4 +1,3 @@
-use dialog::DialogBox;
 use serde::Deserialize;
 use sixtyfps::{Model, ModelHandle, SharedString, VecModel};
 use std::future::Future;
@@ -284,7 +283,10 @@ async fn read_metadata(
     Ok(())
 }
 
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 fn show_open_dialog(manifest: SharedString) -> SharedString {
+    use dialog::DialogBox;
+
     let res = dialog::FileSelection::new("Select a manifest (Cargo.toml)")
         .title("Select a manifest")
         // .path(manifest.as_str())
@@ -297,5 +299,19 @@ fn show_open_dialog(manifest: SharedString) -> SharedString {
             eprintln!("{}", e);
             manifest
         }
+    }
+}
+
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+fn show_open_dialog(manifest: SharedString) -> SharedString {
+    let path = std::path::PathBuf::from(manifest.as_str());
+    let directory = path.parent().map(|dir| dir.to_string_lossy().to_owned()).unwrap_or_default();
+    let res = rfd::FileDialog::new()
+    .set_directory(directory.as_ref())
+        .pick_file();
+
+    match res {
+        Some(r) => r.to_string_lossy().to_string().into(),
+        None => manifest,
     }
 }
