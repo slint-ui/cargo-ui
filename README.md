@@ -17,8 +17,8 @@ Double-click on a `Cargo.toml` file would also run cargo-ui.
 
 Some idea of feature
 
- - [ ] choose the binary to run or the lib to build or the test to run
- - [ ] Display the errors in a nice way
+ - [x] choose the binary to run or the lib to build or the test to run
+ - [x] Display the errors in a nice way
  - [x] select the debug or release mode
  - [ ] select the toolchain (nightly, stable, ...)
  - [ ] maybe integrate with rustup to update the toolchain or  install new one
