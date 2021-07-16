@@ -31,4 +31,21 @@ Some idea of feature
  - [ ] show build progress and be able to cancel the build
  - [ ] also edit other metadata of the the Cargo.toml (edition, author, ...)
  - [ ] manage workspace and do batch edit of the metadata on all members
+ - [ ] Have a "playground" tab which allow to easily try rust code
+ - [ ] a publish tab which publish all the crate in the workspace in the right order
  - [ ] ...
+
+
+## Style
+
+The default style from SixtyFPS is the `ugly` style. But the interface looks much
+nicer using the `native` style as this has native controls and images.
+
+To install using the native style, use
+
+```sh
+SIXTYFPS_STYLE=native cargo install
+```
+
+The use of the native style require Qt 5.15, see https://github.com/sixtyfpsui/sixtyfps/blob/master/docs/install_qt.md
+
