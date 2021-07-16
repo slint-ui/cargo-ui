@@ -110,31 +110,33 @@ CargoUI := Window {
     VerticalBox {
         //alignment: start;
 
-        HorizontalBox {
-            Text { text: "Manifest:"; vertical-alignment: center; }
-            le_manifest := LineEdit {
-                accepted => { root.reload_manifest(le_manifest.text); }
-                horizontal_stretch: 1;
-            }
-            Button {
-                text: "📂";
-                clicked => { root.show_open_dialog(); }
-            }
-        }
-
-        HorizontalBox {
-            //alignment: start;
-            Text { text: "Package:"; vertical-alignment: center; }
-            package_cb := ComboBox { model: packages; enabled: root.workspace_valid; }
-            Rectangle { }
-            Text { text: "Profile: "; vertical-alignment: center; }
-            mode_cb := ComboBox { current_value: "debug"; model: ["debug", "release"]; enabled: root.workspace_valid; }
-            Rectangle { }
-            //Text { text: "Toolchain: "; }
-            //profile_cb := ComboBox { model: ["stable", "nightly"]; }
-        }
-
         GridBox {
+            Row {
+                Text { text: "Manifest:"; vertical-alignment: center; horizontal-alignment: right; }
+                HorizontalLayout {
+                    colspan: 3;
+                    le_manifest := LineEdit {
+                        accepted => { root.reload_manifest(le_manifest.text); }
+                        horizontal_stretch: 1;
+                    }
+                    Button {
+                        text: "📂";
+                        clicked => { root.show_open_dialog(); }
+                    }
+                }
+            }
+    
+            Row {
+                Text { text: "Package:"; vertical-alignment: center; horizontal-alignment: right; }
+                package_cb := ComboBox {
+                    model: packages;
+                    enabled: root.workspace_valid;
+                }
+                Text { text: "Profile: "; vertical-alignment: center; horizontal-alignment: right; }
+                mode_cb := ComboBox { current_value: "debug"; model: ["debug", "release"]; enabled: root.workspace_valid; }
+                //Text { text: "Toolchain: "; }
+                //profile_cb := ComboBox { model: ["stable", "nightly"]; }
+            }
 
             Row {
                 Button {
@@ -153,7 +155,7 @@ CargoUI := Window {
                 bin_cb := ComboBox {
                     model: extra_run;
                     enabled: root.workspace_valid;
-                    colspan: 4;
+                    colspan: 3;
                 }
             }
 
@@ -206,7 +208,7 @@ CargoUI := Window {
                 test_cb := ComboBox {
                     model: extra_test;
                     enabled: root.workspace_valid;
-                    colspan: 4;
+                    colspan: 3;
                 }
             }
 
