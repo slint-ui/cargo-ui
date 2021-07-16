@@ -155,7 +155,7 @@ async fn run_cargo(
                 let h = handle.clone();
                 sixtyfps::invoke_from_event_loop(move || {
                     if let Some(h) = h.upgrade() {
-                        h.set_status(line.as_str().into());
+                        h.set_status(line.into());
                     }
                 });
             }
@@ -189,8 +189,8 @@ fn cargo_message_to_diag(msg: cargo_metadata::Message) -> Option<Diag> {
     match msg {
         cargo_metadata::Message::CompilerMessage(msg) => {
             let diag = Diag {
-                short: msg.message.message.as_str().into(),
-                expanded: msg.message.rendered.unwrap_or_default().as_str().into(),
+                short: msg.message.message.into(),
+                expanded: msg.message.rendered.unwrap_or_default().into(),
                 level: match msg.message.level {
                     DiagnosticLevel::Error => 1,
                     DiagnosticLevel::Warning => 2,
@@ -213,12 +213,12 @@ fn default_manifest() -> SharedString {
         .skip_while(|a| a == "ui" || a.starts_with('-'))
         .next()
     {
-        Some(p) => p.as_str().into(),
+        Some(p) => p.into(),
         None => {
             let path = Path::new("Cargo.toml");
             if path.exists() {
                 path.canonicalize()
-                    .map(|p| p.display().to_string().as_str().into())
+                    .map(|p| p.display().to_string().into())
                     .unwrap_or_default()
             } else {
                 SharedString::default()
@@ -237,6 +237,7 @@ async fn read_metadata(
         if let Some(h) = h.upgrade() {
             h.set_workspace_valid(false);
             h.set_manifest_path(manifest_clone);
+            h.set_status("Loading metadata from Cargo.toml...".into());
         }
     });
 
@@ -300,7 +301,7 @@ fn show_open_dialog(manifest: SharedString) -> SharedString {
         .mode(dialog::FileSelectionMode::Open)
         .show();
     match res {
-        Ok(Some(r)) => r.as_str().into(),
+        Ok(Some(r)) => r.into(),
         Ok(None) => manifest,
         Err(e) => {
             eprintln!("{}", e);
