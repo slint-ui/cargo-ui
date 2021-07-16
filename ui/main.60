@@ -69,6 +69,7 @@ BuildingPane := Rectangle {
         HorizontalBox {
             alignment: space_between;
             cancel_btn := Button {
+                enabled: is_building;
                 text: "❌ Cancel";
                 height: min_height;
             }
