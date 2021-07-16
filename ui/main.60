@@ -90,7 +90,7 @@ CargoUI := Window {
     preferred_height: 500px;
     preferred_width: 300px;
 
-    property <string> status;
+    property <string> status: "Cargo UI";
     property <[string]> packages;
     property <[string]> extra_run;
     property <[string]> extra_test;
@@ -108,117 +108,131 @@ CargoUI := Window {
     // required because of a bug in sixtyfps 0.1.0 (fixed by e633ee82)
     property <Action> ignore_me;
 
-    VerticalBox {
-        //alignment: start;
-
-        GridBox {
-            Row {
-                Text { text: "Manifest:"; vertical-alignment: center; horizontal-alignment: right; }
-                HorizontalLayout {
-                    colspan: 3;
-                    le_manifest := LineEdit {
-                        accepted => { root.reload_manifest(le_manifest.text); }
-                        horizontal_stretch: 1;
-                    }
-                    Button {
-                        text: "📂";
-                        clicked => { root.show_open_dialog(); }
-                    }
+    GridBox {
+        Row {
+            Text { text: "Manifest:"; vertical-alignment: center; horizontal-alignment: right; }
+            HorizontalLayout {
+                colspan: 3;
+                le_manifest := LineEdit {
+                    accepted => { root.reload_manifest(le_manifest.text); }
+                    horizontal_stretch: 1;
+                }
+                open_button := Button {
+                    text: "📂";
+                    clicked => { root.show_open_dialog(); }
                 }
             }
-    
-            Row {
-                Text { text: "Package:"; vertical-alignment: center; horizontal-alignment: right; }
-                package_cb := ComboBox {
-                    model: packages;
-                    enabled: root.workspace_valid;
-                }
-                Text { text: "Profile: "; vertical-alignment: center; horizontal-alignment: right; }
-                mode_cb := ComboBox { current_value: "debug"; model: ["debug", "release"]; enabled: root.workspace_valid; }
-                //Text { text: "Toolchain: "; }
-                //profile_cb := ComboBox { model: ["stable", "nightly"]; }
-            }
-
-            Row {
-                Button {
-                    text: "🚀 Run";
-                    enabled: root.workspace_valid;
-                    clicked => {
-                        build_pane_visible = true;
-                        action({
-                            command: "run",
-                            package: package_cb.current_value,
-                            profile: mode_cb.current_value,
-                            extra: bin_cb.current_value
-                        });
-                    }
-                }
-                bin_cb := ComboBox {
-                    model: extra_run;
-                    enabled: root.workspace_valid;
-                    colspan: 3;
-                }
-            }
-
-            Row {
-                Button {
-                    text: "🏗️ Build";
-                    enabled: root.workspace_valid;
-                    clicked => {
-                        build_pane_visible = true;
-                        action({
-                            command: "build",
-                            package: package_cb.current_value,
-                            profile: mode_cb.current_value,
-                            extra: ""
-                        });
-                    }
-                }
-            }
-
-            Row {
-                Button {
-                    text: "👍 Check";
-                    enabled: root.workspace_valid;
-                    clicked => {
-                        build_pane_visible = true;
-                        action({
-                            command: "check",
-                            package: package_cb.current_value,
-                            profile: mode_cb.current_value,
-                            extra: ""
-                        });
-                    }
-                }
-            }
-
-            Row {
-                Button {
-                    text: "🧪 Test";
-                    enabled: root.workspace_valid;
-                    clicked => {
-                        build_pane_visible = true;
-                        action({
-                            command: "test",
-                            package: package_cb.current_value,
-                            profile: mode_cb.current_value,
-                            extra: test_cb.current_value,
-                        });
-                    }
-                }
-                test_cb := ComboBox {
-                    model: extra_test;
-                    enabled: root.workspace_valid && root.has_extra_tests;
-                    colspan: 3;
-                }
-            }
-
         }
 
-        Rectangle { min-height: 40px; }
+        Row {
+            Text { text: "Package:"; vertical-alignment: center; horizontal-alignment: right; }
+            package_cb := ComboBox {
+                model: packages;
+                enabled: root.workspace_valid;
+                min-height: open_button.min-height; // somehow we need that because this row don't have emoji
+            }
+            Text { text: "Profile: "; vertical-alignment: center; horizontal-alignment: right; }
+            mode_cb := ComboBox {
+                current_value: "debug";
+                model: ["debug", "release"];
+                enabled: root.workspace_valid;
+            }
+            //Text { text: "Toolchain: "; }
+            //profile_cb := ComboBox { model: ["stable", "nightly"]; }
+        }
 
-        Text { text: status; wrap: word_wrap; overflow: elide; }
+        Row {
+            Rectangle { height: 40px; }
+        }
+
+
+        Row {
+            Button {
+                text: "🚀 Run";
+                enabled: root.workspace_valid;
+                clicked => {
+                    build_pane_visible = true;
+                    action({
+                        command: "run",
+                        package: package_cb.current_value,
+                        profile: mode_cb.current_value,
+                        extra: bin_cb.current_value
+                    });
+                }
+            }
+            bin_cb := ComboBox {
+                model: extra_run;
+                enabled: root.workspace_valid;
+                colspan: 3;
+            }
+        }
+
+        Row {
+            Button {
+                text: "🏗️ Build";
+                enabled: root.workspace_valid;
+                clicked => {
+                    build_pane_visible = true;
+                    action({
+                        command: "build",
+                        package: package_cb.current_value,
+                        profile: mode_cb.current_value,
+                        extra: ""
+                    });
+                }
+            }
+        }
+
+        Row {
+            Button {
+                text: "👍 Check";
+                enabled: root.workspace_valid;
+                clicked => {
+                    build_pane_visible = true;
+                    action({
+                        command: "check",
+                        package: package_cb.current_value,
+                        profile: mode_cb.current_value,
+                        extra: ""
+                    });
+                }
+            }
+        }
+
+        Row {
+            Button {
+                text: "🧪 Test";
+                enabled: root.workspace_valid;
+                clicked => {
+                    build_pane_visible = true;
+                    action({
+                        command: "test",
+                        package: package_cb.current_value,
+                        profile: mode_cb.current_value,
+                        extra: test_cb.current_value,
+                    });
+                }
+            }
+            test_cb := ComboBox {
+                model: extra_test;
+                enabled: root.workspace_valid && root.has_extra_tests;
+                colspan: 3;
+            }
+        }
+
+        Row {
+            Rectangle { min-height: 40px; }
+        }
+
+        Text {
+            colspan: 3;
+            text: status;
+            wrap: word_wrap;
+            overflow: elide;
+        }
     }
+
+
 
     animated := Rectangle {
         width: 100%; height: 100%;
