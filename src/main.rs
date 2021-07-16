@@ -1,3 +1,4 @@
+use dialog::DialogBox;
 use serde::Deserialize;
 use sixtyfps::{Model, ModelHandle, SharedString, VecModel};
 use std::future::Future;
@@ -14,6 +15,7 @@ enum Message {
     Quit,
     Action(Action),
     ReloadManifest(SharedString),
+    ShowOpenDialog,
     Cancel,
 }
 
@@ -31,6 +33,8 @@ fn main() {
     handle.on_action(move |action| send.send(Message::Action(action)).unwrap());
     let send = s.clone();
     handle.on_cancel(move || send.send(Message::Cancel).unwrap());
+    let send = s.clone();
+    handle.on_show_open_dialog(move || send.send(Message::ShowOpenDialog).unwrap());
     let send = s.clone();
     handle.on_reload_manifest(move |m| send.send(Message::ReloadManifest(m)).unwrap());
     handle.run();
@@ -73,6 +77,10 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
             }
             Some(Message::ReloadManifest(m)) => {
                 manifest = m;
+                run_cargo_future = Some(Box::pin(read_metadata(manifest.clone(), handle.clone())));
+            }
+            Some(Message::ShowOpenDialog) => {
+                manifest = show_open_dialog(manifest);
                 run_cargo_future = Some(Box::pin(read_metadata(manifest.clone(), handle.clone())));
             }
         }
@@ -266,4 +274,20 @@ async fn read_metadata(
         }
     });
     Ok(())
+}
+
+fn show_open_dialog(manifest: SharedString) -> SharedString {
+    let res = dialog::FileSelection::new("Select a manifest (Cargo.toml)")
+        .title("Select a manifest")
+        // .path(manifest.as_str())
+        .mode(dialog::FileSelectionMode::Open)
+        .show();
+    match res {
+        Ok(Some(r)) => r.as_str().into(),
+        Ok(None) => manifest,
+        Err(e) => {
+            eprintln!("{}", e);
+            manifest
+        }
+    }
 }

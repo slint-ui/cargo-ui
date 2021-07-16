@@ -80,7 +80,7 @@ CargoUI := Window {
             }
             Button {
                 text: "📂";
-                clicked => { root.reload_manifest(le_manifest.text); }
+                clicked => { root.show_open_dialog(); }
             }
         }
 
