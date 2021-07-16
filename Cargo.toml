@@ -7,6 +7,7 @@ build = "build.rs"
 license = "GPL-3.0-only"
 description = "GUI for cargo"
 repository = "https://github.com/sixtyfpsui/cargo-ui"
+resolver = "2"
 
 [dependencies]
 sixtyfps = "0.1.0"
