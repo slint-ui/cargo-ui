@@ -73,7 +73,7 @@ CargoUI := Window {
         Text { text: "Cargo UI"; }
 
         HorizontalBox {
-            Text { text: "Manifest:"; }
+            Text { text: "Manifest:"; vertical-alignment: center; }
             le_manifest := LineEdit {
                 accepted => { root.reload_manifest(le_manifest.text); }
                 horizontal_stretch: 1;
@@ -154,10 +154,10 @@ CargoUI := Window {
 
         HorizontalBox {
             //alignment: start;
-            Text { text: "Package:"; }
+            Text { text: "Package:"; vertical-alignment: center; }
             package_cb := ComboBox { model: packages; enabled: root.workspace_valid; }
             Rectangle { }
-            Text { text: "Profile: "; }
+            Text { text: "Profile: "; vertical-alignment: center; }
             mode_cb := ComboBox { current_value: "debug"; model: ["debug", "release"]; enabled: root.workspace_valid; }
             Rectangle { }
             //Text { text: "Toolchain: "; }
