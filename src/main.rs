@@ -292,6 +292,7 @@ async fn read_metadata(
             h.set_extra_run(ModelHandle::from(
                 Rc::new(VecModel::from(run_target)) as Rc<dyn Model<Data = SharedString>>
             ));
+            h.set_has_extra_tests(!test_target.is_empty());
             h.set_extra_test(ModelHandle::from(
                 Rc::new(VecModel::from(test_target)) as Rc<dyn Model<Data = SharedString>>
             ));

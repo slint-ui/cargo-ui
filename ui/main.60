@@ -94,6 +94,7 @@ CargoUI := Window {
     property <[string]> packages;
     property <[string]> extra_run;
     property <[string]> extra_test;
+    property <bool> has_extra_tests : true; // Remove, once we can query the length of models in .60
     callback action(Action);
     callback cancel;
     property <bool> is_building : false;
@@ -207,7 +208,7 @@ CargoUI := Window {
                 }
                 test_cb := ComboBox {
                     model: extra_test;
-                    enabled: root.workspace_valid;
+                    enabled: root.workspace_valid && root.has_extra_tests;
                     colspan: 3;
                 }
             }
