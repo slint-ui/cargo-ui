@@ -1,4 +1,4 @@
-import {ComboBox, VerticalBox, HorizontalBox, Button, LineEdit, ListView} from "sixtyfps_widgets.60";
+import {ComboBox, VerticalBox, HorizontalBox, GridBox, Button, LineEdit, ListView} from "sixtyfps_widgets.60";
 
 struct Diag := {
     short: string,
@@ -109,7 +109,6 @@ CargoUI := Window {
 
     VerticalBox {
         //alignment: start;
-        Text { text: "Cargo UI"; }
 
         HorizontalBox {
             Text { text: "Manifest:"; vertical-alignment: center; }
@@ -123,78 +122,6 @@ CargoUI := Window {
             }
         }
 
-        Rectangle { height: 40px; }
-
-        HorizontalBox {
-            alignment: start;
-            Button {
-                text: "🚀 Run";
-                enabled: root.workspace_valid;
-                clicked => {
-                    build_pane_visible = true;
-                    action({
-                        command: "run",
-                        package: package_cb.current_value,
-                        profile: mode_cb.current_value,
-                        extra: bin_cb.current_value
-                    });
-                }
-            }
-            bin_cb := ComboBox { model: extra_run; enabled: root.workspace_valid; }
-        }
-        HorizontalBox {
-            alignment: start;
-            Button {
-                text: "🏗️ Build";
-                enabled: root.workspace_valid;
-                clicked => {
-                    build_pane_visible = true;
-                    action({
-                        command: "build",
-                        package: package_cb.current_value,
-                        profile: mode_cb.current_value,
-                        extra: ""
-                    });
-                }
-            }
-        }
-        HorizontalBox {
-            alignment: start;
-            Button {
-                text: "👍 Check";
-                enabled: root.workspace_valid;
-                clicked => {
-                    build_pane_visible = true;
-                    action({
-                        command: "check",
-                        package: package_cb.current_value,
-                        profile: mode_cb.current_value,
-                        extra: ""
-                    });
-                }
-            }
-        }
-        HorizontalBox {
-            alignment: start;
-            Button {
-                text: "🧪 Test";
-                enabled: root.workspace_valid;
-                clicked => {
-                    build_pane_visible = true;
-                    action({
-                        command: "test",
-                        package: package_cb.current_value,
-                        profile: mode_cb.current_value,
-                        extra: test_cb.current_value,
-                    });
-                }
-            }
-            test_cb := ComboBox { model: extra_test; enabled: root.workspace_valid; }
-        }
-
-        Rectangle { min-height: 40px; }
-
-
         HorizontalBox {
             //alignment: start;
             Text { text: "Package:"; vertical-alignment: center; }
@@ -206,6 +133,87 @@ CargoUI := Window {
             //Text { text: "Toolchain: "; }
             //profile_cb := ComboBox { model: ["stable", "nightly"]; }
         }
+
+        GridBox {
+
+            Row {
+                Button {
+                    text: "🚀 Run";
+                    enabled: root.workspace_valid;
+                    clicked => {
+                        build_pane_visible = true;
+                        action({
+                            command: "run",
+                            package: package_cb.current_value,
+                            profile: mode_cb.current_value,
+                            extra: bin_cb.current_value
+                        });
+                    }
+                }
+                bin_cb := ComboBox {
+                    model: extra_run;
+                    enabled: root.workspace_valid;
+                    colspan: 4;
+                }
+            }
+
+            Row {
+                Button {
+                    text: "🏗️ Build";
+                    enabled: root.workspace_valid;
+                    clicked => {
+                        build_pane_visible = true;
+                        action({
+                            command: "build",
+                            package: package_cb.current_value,
+                            profile: mode_cb.current_value,
+                            extra: ""
+                        });
+                    }
+                }
+            }
+
+            Row {
+                Button {
+                    text: "👍 Check";
+                    enabled: root.workspace_valid;
+                    clicked => {
+                        build_pane_visible = true;
+                        action({
+                            command: "check",
+                            package: package_cb.current_value,
+                            profile: mode_cb.current_value,
+                            extra: ""
+                        });
+                    }
+                }
+            }
+
+            Row {
+                Button {
+                    text: "🧪 Test";
+                    enabled: root.workspace_valid;
+                    clicked => {
+                        build_pane_visible = true;
+                        action({
+                            command: "test",
+                            package: package_cb.current_value,
+                            profile: mode_cb.current_value,
+                            extra: test_cb.current_value,
+                        });
+                    }
+                }
+                test_cb := ComboBox {
+                    model: extra_test;
+                    enabled: root.workspace_valid;
+                    colspan: 4;
+                }
+            }
+
+        }
+
+        Rectangle { min-height: 40px; }
+
         Text { text: status; wrap: word_wrap; overflow: elide; }
     }
 
