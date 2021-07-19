@@ -6,6 +6,8 @@ edition = "2018"
 build = "build.rs"
 license = "GPL-3.0-only"
 description = "GUI for cargo"
+categories = ["development-tools::cargo-plugins"]
+keywords = ["cargo", "ui", "gui"]
 repository = "https://github.com/sixtyfpsui/cargo-ui"
 resolver = "2"
 
