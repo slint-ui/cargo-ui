@@ -29,22 +29,22 @@ The use of the native style requires Qt 5.15, see https://github.com/sixtyfpsui/
 
 Some ideas for features:
 
- - [x] choose the binary to run or the lib to build or the test to run
+ - [x] Choose the binary to run or the lib to build or the test to run
  - [x] Display the errors in a nice way
- - [x] select the debug or release mode
- - [ ] select the toolchain (nightly, stable, ...)
- - [ ] maybe integrate with rustup to update the toolchain or  install new one
+ - [x] Select the debug or release mode
+ - [ ] Select the toolchain (nightly, stable, ...)
+ - [ ] Maybe integrate with rustup to update the toolchain or install new one
  - [ ] See the dependencies as an expendable tree
  - [ ] Show duplicated dependencies
  - [ ] Show outdated dependencies, with button to easily update
  - [ ] Ability to easily add dependency (by searching the crates.io index)
- - [ ] edit features of dependencies from a list.
- - [ ] show asm, llvm-ir, ...
- - [ ] show build progress and be able to cancel the build
- - [ ] also edit other metadata of the the Cargo.toml (edition, author, ...)
- - [ ] manage workspace and do batch edit of the metadata on all members
+ - [ ] Edit features of dependencies from a list.
+ - [ ] Show asm, llvm-ir, ...
+ - [ ] Show build progress and be able to cancel the build
+ - [ ] Edit other metadata of the the Cargo.toml (edition, author, ...)
+ - [ ] Manage workspaces and do batch edit of the metadata on all members
  - [ ] Have a "playground" tab which allow to easily try rust code
- - [ ] a publish tab which publish all the crate in the workspace in the right order
+ - [ ] A publish tab which publishes all the crates in the workspace in the right order
  - [ ] Double-click on a `Cargo.toml` file would also run cargo-ui.
  - [ ] ...
 
