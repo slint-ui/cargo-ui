@@ -2,7 +2,7 @@
 
 This is a project to make a GUI for cargo
 
-![Screenshot](screenshott_main.png)
+![Screenshot](screenshot_main.png)
 
 ## The idea
 
