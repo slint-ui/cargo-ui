@@ -13,6 +13,21 @@ cargo install cargo-ui
 cargo ui
 ```
 
+## Prerequisites
+
+In addition to a working cargo and Rust installation, a few other tools are needed:
+
+Windows:
+
+ * A working C compiler (such as MSVC)
+ * [CMake](https://cmake.org/download/) installed in your `PATH`
+
+macOS:
+ *  "Xcode Command Line Tools" need to be installed: `xcode-select --install`
+ * [CMake](https://cmake.org/download/) installed and in your `PATH`. In the CMake
+   GUI application instructions can be found via `Tools->How to Install For Command Line Use`.
+
+
 ## Style
 
 The default style from SixtyFPS is the `ugly` style. But the interface looks much
