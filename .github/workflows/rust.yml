@@ -25,7 +25,7 @@ jobs:
         profile: minimal
         toolchain: stable
     - uses: Swatinem/rust-cache@v1
-      width:
+      with:
         key: rust-cache
 
     - name: Cache Qt
