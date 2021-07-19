@@ -20,25 +20,26 @@ jobs:
 
     - name: Install Linux Dependencies
       run: sudo apt-get install libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev
+      
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v2
+      with:
+        path: ~/work/sixtyfps/Qt
+        key: ${{ runner.os }}-${{ github.job }}-Qt
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v2
+      with:
+        version: '5.15.2'
+        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+      
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: stable
     - uses: Swatinem/rust-cache@v1
       with:
-        key: rust-cache
-
-    - name: Cache Qt
-      id: cache-qt
-      uses: actions/cache@v2
-      with:
-        path: ~/work/sixtyfps/Qt
-        key: ${{ runner.os }}-${{ github.job }}-Qt5.15.2
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: '5.15.2'
-        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+        key: rust_cache
 
     - name: Build
       run: cargo build --verbose
