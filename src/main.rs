@@ -1,3 +1,7 @@
+/* Copyright © 2021 SixtyFPS GmbH <info@sixtyfps.info>
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
 use cargo_metadata::diagnostic::DiagnosticLevel;
 
 use serde::Deserialize;

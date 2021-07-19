@@ -49,3 +49,11 @@ SIXTYFPS_STYLE=native cargo install
 
 The use of the native style require Qt 5.15, see https://github.com/sixtyfpsui/sixtyfps/blob/master/docs/install_qt.md
 
+## License
+
+The source code of Cargo UI is available under the terms of both the MIT license
+and the Apache License (Version 2.0).
+(See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.)
+
+However, because of the use of GPL dependencies, cargo-ui, as a whole, is licensed
+under the terms of the GPLv3 (See [LICENSE-GPL](LICENSE-GPL))
