@@ -129,7 +129,8 @@ CargoUI := Window {
             package_cb := ComboBox {
                 model: packages;
                 enabled: root.workspace_valid;
-                min-height: open_button.min-height; // somehow we need that because this row don't have emoji
+                // required because of bug in sixtyfps 0.1.0 (fixed by ee5386)
+                min-height: open_button.min-height;
             }
             Text { text: "Profile: "; vertical-alignment: center; horizontal-alignment: right; }
             mode_cb := ComboBox {
