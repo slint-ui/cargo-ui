@@ -17,7 +17,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-        
+
     - name: Install Linux Dependencies
       run: sudo apt-get install libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev
     - uses: actions-rs/toolchain@v1
@@ -25,7 +25,9 @@ jobs:
         profile: minimal
         toolchain: stable
     - uses: Swatinem/rust-cache@v1
-    
+      width:
+        key: rust-cache
+
     - name: Cache Qt
       id: cache-qt
       uses: actions/cache@v2
