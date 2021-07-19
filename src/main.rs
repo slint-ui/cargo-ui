@@ -311,12 +311,16 @@ async fn read_metadata(
 fn show_open_dialog(manifest: SharedString) -> SharedString {
     use dialog::DialogBox;
 
-    let res = dialog::FileSelection::new("Select a manifest (Cargo.toml)")
+    let mut dialog = dialog::FileSelection::new("Select a manifest (Cargo.toml)");
+    dialog
         .title("Select a manifest")
-        // .path(manifest.as_str())
-        .mode(dialog::FileSelectionMode::Open)
-        .show();
-    match res {
+        .mode(dialog::FileSelectionMode::Open);
+    if let Some(path) = Path::new(manifest.as_str()).parent() {
+        if path.is_dir() {
+            dialog.path(path);
+        }
+    }
+    match dialog.show() {
         Ok(Some(r)) => r.into(),
         Ok(None) => manifest,
         Err(e) => {
