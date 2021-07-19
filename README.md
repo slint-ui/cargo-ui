@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/sixtyfpsui/cargo-ui/workflows/Rust/badge.svg)](https://github.com/sixtyfpsui/cargo-ui/actions)
 
-This is a project to make a GUI for cargo
+This is a project to make a GUI for cargo, built using [SixtyFPS](https://github.com/sixtyfpsui/sixtyfps):
 
 ![Screenshot](screenshot_main.png)
 
