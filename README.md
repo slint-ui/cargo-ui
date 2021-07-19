@@ -22,12 +22,12 @@ To install using the native style, use
 SIXTYFPS_STYLE=native cargo install
 ```
 
-The use of the native style require Qt 5.15, see https://github.com/sixtyfpsui/sixtyfps/blob/master/docs/install_qt.md
+The use of the native style requires Qt 5.15, see https://github.com/sixtyfpsui/sixtyfps/blob/master/docs/install_qt.md
 
 
 ## Vision
 
-Some idea of feature
+Some ideas for features:
 
  - [x] choose the binary to run or the lib to build or the test to run
  - [x] Display the errors in a nice way
