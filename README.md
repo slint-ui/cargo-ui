@@ -2,7 +2,7 @@
 
 This is a project to make a GUI for cargo
 
-This project is made as a showcase for
+![Screenshot](screenshott_main.png)
 
 ## The idea
 
@@ -11,7 +11,19 @@ cargo install cargo-ui
 cargo ui
 ```
 
-Double-click on a `Cargo.toml` file would also run cargo-ui.
+## Style
+
+The default style from SixtyFPS is the `ugly` style. But the interface looks much
+nicer using the `native` style as this has native controls and images.
+
+To install using the native style, use
+
+```sh
+SIXTYFPS_STYLE=native cargo install
+```
+
+The use of the native style require Qt 5.15, see https://github.com/sixtyfpsui/sixtyfps/blob/master/docs/install_qt.md
+
 
 ## Vision
 
@@ -33,21 +45,8 @@ Some idea of feature
  - [ ] manage workspace and do batch edit of the metadata on all members
  - [ ] Have a "playground" tab which allow to easily try rust code
  - [ ] a publish tab which publish all the crate in the workspace in the right order
+ - [ ] Double-click on a `Cargo.toml` file would also run cargo-ui.
  - [ ] ...
-
-
-## Style
-
-The default style from SixtyFPS is the `ugly` style. But the interface looks much
-nicer using the `native` style as this has native controls and images.
-
-To install using the native style, use
-
-```sh
-SIXTYFPS_STYLE=native cargo install
-```
-
-The use of the native style require Qt 5.15, see https://github.com/sixtyfpsui/sixtyfps/blob/master/docs/install_qt.md
 
 ## License
 
