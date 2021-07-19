@@ -232,7 +232,7 @@ fn default_manifest() -> SharedString {
         None => {
             let path = Path::new("Cargo.toml");
             if path.exists() {
-                path.canonicalize()
+                dunce::canonicalize(path)
                     .map(|p| p.display().to_string().into())
                     .unwrap_or_default()
             } else {
