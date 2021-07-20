@@ -15,7 +15,11 @@ cargo ui
 
 ## Prerequisites
 
-In addition to a working cargo and Rust installation, a few other tools are needed:
+In addition to a working cargo and Rust installation, a few other tools or libraries are needed:
+
+Linux:
+
+ * fontconfig library (`libfontconfig-dev` on debian based distributions)
 
 Windows:
 
