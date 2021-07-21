@@ -20,6 +20,7 @@ In addition to a working cargo and Rust installation, a few other tools or libra
 Linux:
 
  * fontconfig library (`libfontconfig-dev` on debian based distributions)
+ * xcb library (`libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev` on debian based distributions)
 
 Windows:
 
