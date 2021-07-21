@@ -40,7 +40,7 @@ nicer using the `native` style as this has native controls and images.
 To install using the native style, use
 
 ```sh
-SIXTYFPS_STYLE=native cargo install
+SIXTYFPS_STYLE=native cargo install cargo-ui
 ```
 
 The use of the native style requires Qt 5.15, see https://github.com/sixtyfpsui/sixtyfps/blob/master/docs/install_qt.md
