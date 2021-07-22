@@ -2,7 +2,6 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-
 import {ComboBox, VerticalBox, HorizontalBox, GridBox, Button, LineEdit, ListView} from "sixtyfps_widgets.60";
 
 struct Diag := {
@@ -40,35 +39,33 @@ BuildingPane := Rectangle {
 
         ListView {
             viewport_width: width;
-            VerticalBox {
-                alignment: start;
-                for error in errors : TouchArea {
-                    property<bool> expanded;
-                    clicked => { expanded = !expanded }
-                    enabled: error.expanded != "";
-                    animate height { duration: 150ms; easing: ease; }
-                    HorizontalBox {
-                        if (enabled) : Text {
-                            text: !expanded ? "▶": "▼";
+            for error in errors : TouchArea {
+                property<bool> expanded;
+                clicked => { expanded = !expanded }
+                enabled: error.expanded != "";
+                animate height { duration: 150ms; easing: ease; }
+                height: b.preferred_height;
+                b := HorizontalBox {
+                    if (enabled) : Text {
+                        text: !expanded ? "▶": "▼";
+                    }
+                    Text {
+                        horizontal_stretch: 1;
+                        color: {
+                            error.level == 1 ? #a44 :
+                            error.level == 2 ? #aa4 :
+                            error.level == 3 ? #44a :
+                            #444;
+                        };
+                        property <string> level_txt: {
+                            error.level == 1 ? "error: " :
+                            error.level == 2 ? "warning: " :
+                            error.level == 3 ? "info: " :
+                            "";
                         }
-                        Text {
-                            horizontal_stretch: 1;
-                            color: {
-                                error.level == 1 ? #a44 :
-                                error.level == 2 ? #aa4 :
-                                error.level == 3 ? #44a :
-                                #444;
-                            };
-                            property <string> level_txt: {
-                                error.level == 1 ? "error: " :
-                                error.level == 2 ? "warning: " :
-                                error.level == 3 ? "info: " :
-                                "";
-                            }
-                            text: !expanded ? (level_txt + error.short) : error.expanded;
-                            wrap: word_wrap;
+                        text: !expanded ? (level_txt + error.short) : error.expanded;
+                        wrap: word_wrap;
 
-                        }
                     }
                 }
             }
