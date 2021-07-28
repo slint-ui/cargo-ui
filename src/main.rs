@@ -9,7 +9,7 @@ use sixtyfps::{Model, ModelHandle, SharedString, VecModel};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::rc::Rc;
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -50,7 +50,7 @@ fn main() {
 }
 
 async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<CargoUI>) {
-    let mut manifest = default_manifest();
+    let mut manifest: Manifest = default_manifest().into();
     let mut run_cargo_future: Option<Pin<Box<dyn Future<Output = tokio::io::Result<()>>>>> =
         Some(Box::pin(read_metadata(manifest.clone(), handle.clone())));
     loop {
@@ -83,7 +83,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
                 run_cargo_future = None;
             }
             Some(Message::ReloadManifest(m)) => {
-                manifest = m;
+                manifest = PathBuf::from(m.as_str()).into();
                 run_cargo_future = Some(Box::pin(read_metadata(manifest.clone(), handle.clone())));
             }
             Some(Message::ShowOpenDialog) => {
@@ -96,7 +96,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
 
 async fn run_cargo(
     action: Action,
-    manifest: SharedString,
+    manifest: Manifest,
     handle: sixtyfps::Weak<CargoUI>,
 ) -> tokio::io::Result<()> {
     // FIXME: Would be nice if we did not need a thread_local
@@ -131,7 +131,9 @@ async fn run_cargo(
     let cargo_path = std::env::var("CARGO").unwrap_or_else(|_| "cargo".into());
     let mut cargo_command = tokio::process::Command::new(cargo_path);
     cargo_command.arg(action.command.as_str());
-    cargo_command.arg("--manifest-path").arg(manifest.as_str());
+    cargo_command
+        .arg("--manifest-path")
+        .arg(manifest.path_to_cargo_toml());
     if action.profile == "release" {
         cargo_command.arg("--release");
     }
@@ -223,43 +225,41 @@ fn cargo_message_to_diag(msg: cargo_metadata::Message) -> Option<Diag> {
     }
 }
 
-fn default_manifest() -> SharedString {
+fn default_manifest() -> PathBuf {
     // skip the "ui" arg in case we are invoked with `cargo ui`
-    match std::env::args()
-        .skip(1)
-        .skip_while(|a| a == "ui" || a.starts_with('-'))
-        .next()
-    {
-        Some(p) => p.into(),
-        None => {
-            let path = Path::new("Cargo.toml");
-            if path.exists() {
-                dunce::canonicalize(path)
-                    .map(|p| p.display().to_string().into())
-                    .unwrap_or_default()
-            } else {
-                SharedString::default()
-            }
-        }
-    }
+    dunce::canonicalize(
+        match std::env::args()
+            .skip(1)
+            .skip_while(|a| a == "ui" || a.starts_with('-'))
+            .next()
+        {
+            Some(p) => p.into(),
+            None => std::env::current_dir().unwrap_or_default(),
+        },
+    )
+    .unwrap_or_default()
 }
 
 async fn read_metadata(
-    manifest: SharedString,
+    manifest: Manifest,
     handle: sixtyfps::Weak<CargoUI>,
 ) -> tokio::io::Result<()> {
     let h = handle.clone();
-    let manifest_clone = manifest.clone();
+    let manifest_str = manifest
+        .path_to_cargo_toml()
+        .to_string_lossy()
+        .as_ref()
+        .into();
     sixtyfps::invoke_from_event_loop(move || {
         if let Some(h) = h.upgrade() {
             h.set_workspace_valid(false);
-            h.set_manifest_path(manifest_clone);
+            h.set_manifest_path(manifest_str);
             h.set_status("Loading metadata from Cargo.toml...".into());
         }
     });
 
     let mut cmd = cargo_metadata::MetadataCommand::new();
-    cmd.manifest_path(manifest.as_str());
+    cmd.manifest_path(manifest.path_to_cargo_toml());
     let metadata = match cmd.exec() {
         Ok(metadata) => metadata,
         Err(e) => {
@@ -328,20 +328,20 @@ async fn read_metadata(
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-fn show_open_dialog(manifest: SharedString) -> SharedString {
+fn show_open_dialog(manifest: Manifest) -> Manifest {
     use dialog::DialogBox;
 
     let mut dialog = dialog::FileSelection::new("Select a manifest (Cargo.toml)");
     dialog
         .title("Select a manifest")
         .mode(dialog::FileSelectionMode::Open);
-    if let Some(path) = Path::new(manifest.as_str()).parent() {
-        if path.is_dir() {
-            dialog.path(path);
-        }
+
+    if let Some(directory) = manifest.directory() {
+        dialog.path(directory);
     }
+
     match dialog.show() {
-        Ok(Some(r)) => r.into(),
+        Ok(Some(r)) => PathBuf::from(r).into(),
         Ok(None) => manifest,
         Err(e) => {
             eprintln!("{}", e);
@@ -351,18 +351,15 @@ fn show_open_dialog(manifest: SharedString) -> SharedString {
 }
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
-fn show_open_dialog(manifest: SharedString) -> SharedString {
-    let path = std::path::PathBuf::from(manifest.as_str());
-    let directory = path
-        .parent()
-        .map(|dir| dir.to_string_lossy().to_owned())
-        .unwrap_or_default();
-    let res = rfd::FileDialog::new()
-        .set_directory(directory.as_ref())
-        .pick_file();
+fn show_open_dialog(manifest: Manifest) -> Manifest {
+    let mut dialog = rfd::FileDialog::new();
 
-    match res {
-        Some(r) => r.to_string_lossy().to_string().into(),
+    if let Some(directory) = manifest.directory() {
+        dialog = dialog.set_directory(directory);
+    }
+
+    match dialog.pick_file() {
+        Some(new_path) => new_path.into(),
         None => manifest,
     }
 }
@@ -487,5 +484,27 @@ impl sixtyfps::Model for DepGraphModel {
     fn set_row_data(&self, row: usize, data: Self::Data) {
         self.get_node(&self.cache.borrow()[row]).node.replace(data);
         self.relayout();
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Manifest(PathBuf);
+
+impl From<PathBuf> for Manifest {
+    fn from(mut directory_or_file: PathBuf) -> Self {
+        if directory_or_file.is_dir() {
+            directory_or_file.push("Cargo.toml");
+        }
+        Self(directory_or_file)
+    }
+}
+
+impl Manifest {
+    fn directory(&self) -> Option<&Path> {
+        self.0.parent().filter(|path| path.is_dir())
+    }
+
+    fn path_to_cargo_toml(&self) -> &Path {
+        &self.0
     }
 }
