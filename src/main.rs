@@ -178,7 +178,7 @@ async fn run_cargo(
                 deserializer.disable_recursion_limit();
                 let msg = cargo_metadata::Message::deserialize(&mut deserializer).unwrap_or(cargo_metadata::Message::TextLine(line));
 
-                if let Some(diag) = cargo_message_to_diag(msg){
+                if let Some(diag) = cargo_message_to_diag(msg) {
                     sixtyfps::invoke_from_event_loop(move || {
                         DIAG_MODEL.with(|model| {
                             model.borrow().push(diag)
@@ -192,9 +192,33 @@ async fn run_cargo(
     sixtyfps::invoke_from_event_loop(move || {
         if let Some(h) = handle.upgrade() {
             h.set_status("Finished".into());
-            if DIAG_MODEL.with(|model| model.borrow().row_count()) == 0 {
-                h.set_build_pane_visible(false);
-            }
+            DIAG_MODEL.with(|model| {
+                let model = model.borrow();
+                if model.row_count() == 0 {
+                    h.set_build_pane_visible(false);
+                }
+
+                let error_count = model
+                    .iter()
+                    .filter(|diagnostic| diagnostic.level == 1)
+                    .count();
+                let warning_count = model
+                    .iter()
+                    .filter(|diagnostic| diagnostic.level == 2)
+                    .count();
+
+                let result = if error_count == 0 && warning_count == 0 {
+                    "Build Successful ✅".into()
+                } else {
+                    format!("{} errors; {} warnings", error_count, warning_count).into()
+                };
+
+                match action.command.as_str() {
+                    "build" => h.set_build_results(result),
+                    "check" => h.set_check_results(result),
+                    _ => {}
+                }
+            })
         }
     });
 
