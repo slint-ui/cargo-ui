@@ -52,10 +52,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Install latest stable
+        uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
-          toolchain: stable
-          components: rustfmt
+            toolchain: stable
+            override: true
+            components: rustfmt
         - name: Run rustfmt
           run: cargo fmt --all -- --check
