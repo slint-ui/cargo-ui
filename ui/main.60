@@ -162,6 +162,8 @@ CargoUI := Window {
     property <[Diag]> diagnostics;
     property <bool> workspace_valid : true;
     property <string> manifest_path <=> le_manifest.text;
+    property <string> build_results <=> build_results_label.text;
+    property <string> check_results <=> check_results_label.text;
     callback reload_manifest(string);
     callback show_open_dialog;
     property <bool> build_pane_visible;
@@ -251,7 +253,8 @@ CargoUI := Window {
                     });
                 }
             }
-            Text {
+            build_results_label := Text {
+                vertical-alignment: center;
             }
         }
 
@@ -268,6 +271,9 @@ CargoUI := Window {
                         extra: ""
                     });
                 }
+            }
+            check_results_label := Text {
+                vertical-alignment: center;
             }
         }
 
