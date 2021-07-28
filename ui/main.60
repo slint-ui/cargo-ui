@@ -234,7 +234,6 @@ CargoUI := Window {
             bin_cb := ComboBox {
                 model: extra_run;
                 enabled: root.workspace_valid;
-                colspan: 3;
             }
         }
 
@@ -289,7 +288,6 @@ CargoUI := Window {
             test_cb := ComboBox {
                 model: extra_test;
                 enabled: root.workspace_valid && root.has_extra_tests;
-                colspan: 3;
             }
         }
 
