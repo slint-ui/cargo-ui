@@ -112,11 +112,11 @@ async fn run_cargo(
         if let Some(h) = h.upgrade() {
             h.set_status("".into());
             h.set_is_building(true);
-            let error_model = Rc::new(VecModel::<Diag>::default());
-            h.set_errors(ModelHandle::from(
-                error_model.clone() as Rc<dyn Model<Data = Diag>>
+            let diagnostics_model = Rc::new(VecModel::<Diag>::default());
+            h.set_diagnostics(ModelHandle::from(
+                diagnostics_model.clone() as Rc<dyn Model<Data = Diag>>
             ));
-            DIAG_MODEL.with(|tl| tl.replace(error_model));
+            DIAG_MODEL.with(|tl| tl.replace(diagnostics_model));
         }
     });
 
