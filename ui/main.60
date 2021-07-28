@@ -151,6 +151,9 @@ CargoUI := Window {
 
     property <string> status: "Cargo UI";
     property <[string]> packages;
+    property <int> packages_count;
+    property <bool> allow_package_selection: packages_count > 2; // the model always has at least two entries
+    property <string> current_package;
     property <[string]> extra_run;
     property <[string]> extra_test;
     property <bool> has_extra_tests : true; // Remove, once we can query the length of models in .60
@@ -186,12 +189,19 @@ CargoUI := Window {
         }
 
         Row {
-            Text { text: "Package:"; vertical-alignment: center; horizontal-alignment: right; }
-            package_cb := ComboBox {
-                model: packages;
-                enabled: root.workspace_valid;
-                // required because of bug in sixtyfps 0.1.0 (fixed by ee5386)
-                min-height: open_button.min-height;
+            HorizontalLayout {
+                if (allow_package_selection): Text {
+                    text: "Package:"; vertical-alignment: center; horizontal-alignment: right;
+                }            
+            }
+            HorizontalLayout {
+                if (allow_package_selection): ComboBox {
+                    model: packages;
+                    enabled: root.workspace_valid;
+                    // required because of bug in sixtyfps 0.1.0 (fixed by ee5386)
+                    min-height: open_button.min-height;
+                    current_value <=> current_package;
+                }
             }
             Text { text: "Profile: "; vertical-alignment: center; horizontal-alignment: right; }
             mode_cb := ComboBox {
@@ -216,7 +226,7 @@ CargoUI := Window {
                     build_pane_visible = true;
                     action({
                         command: "run",
-                        package: package_cb.current_value,
+                        package: current_package,
                         profile: mode_cb.current_value,
                         extra: bin_cb.current_value
                     });
@@ -237,7 +247,7 @@ CargoUI := Window {
                     build_pane_visible = true;
                     action({
                         command: "build",
-                        package: package_cb.current_value,
+                        package: current_package,
                         profile: mode_cb.current_value,
                         extra: ""
                     });
@@ -253,7 +263,7 @@ CargoUI := Window {
                     build_pane_visible = true;
                     action({
                         command: "check",
-                        package: package_cb.current_value,
+                        package: current_package,
                         profile: mode_cb.current_value,
                         extra: ""
                     });
@@ -269,7 +279,7 @@ CargoUI := Window {
                     build_pane_visible = true;
                     action({
                         command: "test",
-                        package: package_cb.current_value,
+                        package: current_package,
                         profile: mode_cb.current_value,
                         extra: test_cb.current_value,
                     });
