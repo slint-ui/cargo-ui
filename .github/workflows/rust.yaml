@@ -58,5 +58,5 @@ jobs:
             toolchain: stable
             override: true
             components: rustfmt
-        - name: Run rustfmt
-          run: cargo fmt --all -- --check
+      - name: Run rustfmt
+        run: cargo fmt --all -- --check
