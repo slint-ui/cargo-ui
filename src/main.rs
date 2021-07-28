@@ -294,7 +294,9 @@ async fn read_metadata(
     sixtyfps::invoke_from_event_loop(move || {
         if let Some(h) = h.upgrade() {
             h.set_current_package(SharedString::default());
-            h.set_packages_count(packages.len() as i32);
+            // The model always has at least two entries, one for all and the first package,
+            // so enable multi-package selection only if there is something else to select.
+            h.set_allow_package_selection(packages.len() > 2);
             h.set_packages(ModelHandle::from(
                 Rc::new(VecModel::from(packages)) as Rc<dyn Model<Data = SharedString>>
             ));

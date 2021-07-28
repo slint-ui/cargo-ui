@@ -151,8 +151,7 @@ CargoUI := Window {
 
     property <string> status: "Cargo UI";
     property <[string]> packages;
-    property <int> packages_count;
-    property <bool> allow_package_selection: packages_count > 2; // the model always has at least two entries
+    property <bool> allow_package_selection: false;
     property <string> current_package;
     property <[string]> extra_run;
     property <[string]> extra_test;
