@@ -285,7 +285,7 @@ CargoUI := Window {
         Row {
             Button {
                 colspan: 2;
-                text: "🌳 See dependencies";
+                text: "🌳 Show Dependencies";
                 clicked => { deptree_pane_visible = true; }
             }
         }
