@@ -2,10 +2,12 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use cargo_metadata::diagnostic::DiagnosticLevel;
+use cargo_metadata::{diagnostic::DiagnosticLevel, Metadata, Node, PackageId};
 
 use serde::Deserialize;
 use sixtyfps::{Model, ModelHandle, SharedString, VecModel};
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
@@ -288,8 +290,9 @@ async fn read_metadata(
             }
         }
     }
+    let h = handle.clone();
     sixtyfps::invoke_from_event_loop(move || {
-        if let Some(h) = handle.upgrade() {
+        if let Some(h) = h.upgrade() {
             h.set_packages(ModelHandle::from(
                 Rc::new(VecModel::from(packages)) as Rc<dyn Model<Data = SharedString>>
             ));
@@ -302,6 +305,23 @@ async fn read_metadata(
             ));
             h.set_status("Cargo.toml loaded".into());
             h.set_workspace_valid(true);
+        }
+    });
+
+    let mut depgraph_tree = Vec::new();
+    if let Some(resolve) = &metadata.resolve {
+        let mut duplicates = HashSet::new();
+        let map: HashMap<_, _> = resolve.nodes.iter().map(|n| (n.id.clone(), n)).collect();
+        for m in &metadata.workspace_members {
+            build_dep_tree(m, &mut depgraph_tree, &mut duplicates, &metadata, &map, 0);
+        }
+    }
+
+    let h = handle.clone();
+    sixtyfps::invoke_from_event_loop(move || {
+        if let Some(h) = h.upgrade() {
+            let model = Rc::new(DepGraphModel::from(depgraph_tree));
+            h.set_deptree(ModelHandle::new(model))
         }
     });
     Ok(())
@@ -344,5 +364,128 @@ fn show_open_dialog(manifest: SharedString) -> SharedString {
     match res {
         Some(r) => r.to_string_lossy().to_string().into(),
         None => manifest,
+    }
+}
+
+struct TreeNode {
+    node: RefCell<DependencyNode>,
+    children: Vec<TreeNode>,
+}
+
+fn build_dep_tree(
+    package_id: &PackageId,
+    depgraph_tree: &mut Vec<TreeNode>,
+    duplicates: &mut HashSet<PackageId>,
+    metadata: &Metadata,
+    map: &HashMap<PackageId, &Node>,
+    indentation: i32,
+) {
+    let package = &metadata[package_id];
+    let mut text = package.name.as_str().into();
+    if duplicates.contains(package_id) {
+        text += " (duplicated)";
+    }
+    let mut node = TreeNode {
+        node: DependencyNode {
+            has_children: false,
+            indentation,
+            open: true,
+            text,
+        }
+        .into(),
+        children: Default::default(),
+    };
+
+    if !duplicates.contains(package_id) {
+        duplicates.insert(package_id.clone());
+
+        for d in &map[package_id].dependencies {
+            build_dep_tree(
+                d,
+                &mut node.children,
+                duplicates,
+                metadata,
+                map,
+                indentation + 1,
+            );
+        }
+    }
+
+    if !node.children.is_empty() {
+        node.node.borrow_mut().has_children = true;
+    }
+    depgraph_tree.push(node);
+}
+
+struct DepGraphModel {
+    /// path to the location in the tree
+    cache: RefCell<Vec<Vec<usize>>>,
+    tree: Vec<TreeNode>,
+    notify: sixtyfps::ModelNotify,
+}
+
+impl From<Vec<TreeNode>> for DepGraphModel {
+    fn from(tree: Vec<TreeNode>) -> Self {
+        let self_ = Self {
+            cache: Default::default(),
+            tree,
+            notify: Default::default(),
+        };
+        self_.relayout();
+        self_
+    }
+}
+
+impl DepGraphModel {
+    fn get_node(&self, path: &[usize]) -> &TreeNode {
+        let mut path_iter = path.iter();
+        let mut node = &self.tree[*path_iter.next().unwrap()];
+        while let Some(x) = path_iter.next() {
+            node = &node.children[*x];
+        }
+        node
+    }
+
+    fn flatten_tree(path: &mut Vec<usize>, cache: &mut Vec<Vec<usize>>, nodes: &[TreeNode]) {
+        for (i, n) in nodes.iter().enumerate() {
+            path.push(i);
+            cache.push(path.clone());
+            if n.node.borrow().open {
+                Self::flatten_tree(path, cache, &n.children);
+            }
+            let _x = path.pop();
+            debug_assert_eq!(_x, Some(i));
+        }
+    }
+
+    fn relayout(&self) {
+        let mut cache = self.cache.borrow_mut();
+        self.notify.row_removed(0, cache.len());
+        let mut path = vec![];
+        cache.clear();
+        Self::flatten_tree(&mut path, &mut cache, &self.tree);
+        self.notify.row_added(0, cache.len());
+    }
+}
+
+impl sixtyfps::Model for DepGraphModel {
+    type Data = DependencyNode;
+
+    fn row_count(&self) -> usize {
+        self.cache.borrow().len()
+    }
+
+    fn row_data(&self, row: usize) -> Self::Data {
+        let node = self.get_node(&self.cache.borrow()[row]);
+        node.node.borrow().clone()
+    }
+
+    fn attach_peer(&self, peer: sixtyfps::ModelPeer) {
+        self.notify.attach(peer);
+    }
+
+    fn set_row_data(&self, row: usize, data: Self::Data) {
+        self.get_node(&self.cache.borrow()[row]).node.replace(data);
+        self.relayout();
     }
 }

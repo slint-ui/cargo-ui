@@ -18,7 +18,12 @@ struct Action := {
     extra: string, // bin or test name
 }
 
-BuildingPane := Rectangle {
+Pane := Rectangle {
+    // capture all clicks
+    TouchArea {}
+}
+
+BuildingPane := Pane {
     callback cancel <=> cancel_btn.clicked;
     callback back <=> back_btn.clicked;
     property <bool> is_building;
@@ -30,9 +35,6 @@ BuildingPane := Rectangle {
         {short: "Hallo", expanded: "Hello\nworld", level: 3 },
         {short: "Hallo", expanded: "Hello\nworld", level: 0 }
     ];
-
-    // capture all clicks
-    TouchArea {}
 
     VerticalBox {
         status_text := Text { }
@@ -87,6 +89,61 @@ BuildingPane := Rectangle {
     }
 }
 
+struct DependencyNode := {
+    text: string,
+    indentation: int,
+    has_children: bool,
+    open: bool,
+}
+
+DepTreePane := Pane {
+    callback back <=> back_btn.clicked;
+
+    property <[DependencyNode]> model;
+
+    VerticalBox {
+        ListView {
+            for dep in model : HorizontalLayout {
+                height: preferred_height; // FIXME: workaround bug fixed in sixtyfps 0.1.1
+                Rectangle { width: dep.indentation * 15px; }
+                Text {
+                    text: !dep.has_children ? "" : dep.open ? "[-]" : "[+]";
+                    width: 30px;
+                    TouchArea {
+                        clicked => { dep.open = !dep.open; }
+                    }
+                }
+                Text { text: dep.text; }
+            }
+        }
+        HorizontalBox {
+            alignment: end;
+            back_btn:=Button {
+                text: "🔙 Back";
+            }
+        }
+    }
+}
+
+/*
+Debug_DepTreePane := Window {
+    title: "Cargo UI";
+    preferred_height: 500px;
+    preferred_width: 300px;
+    DepTreePane{
+        model: [
+        { text: "AAA", indentation: 0, has_children: true, open: true },
+        { text: "BBB", indentation: 1, has_children: false, open: false, },
+        { text: "CCC", indentation: 1, has_children: false, open: false, },
+        { text: "DDD", indentation: 1, has_children: true , open: true, },
+        { text: "EEE", indentation: 2, has_children: true , open: false, },
+        { text: "FFF", indentation: 1, has_children: false , open: false, },
+
+    ];
+    }
+}
+*/
+
 CargoUI := Window {
     title: "Cargo UI";
     preferred_height: 500px;
@@ -106,6 +163,8 @@ CargoUI := Window {
     callback reload_manifest(string);
     callback show_open_dialog;
     property <bool> build_pane_visible;
+    property <bool> deptree_pane_visible;
+    property <[DependencyNode]> deptree;
 
     // required because of a bug in sixtyfps 0.1.0 (fixed by e633ee82)
     property <Action> ignore_me;
@@ -224,6 +283,14 @@ CargoUI := Window {
         }
 
         Row {
+            Button {
+                colspan: 2;
+                text: "🌳 See dependencies";
+                clicked => { deptree_pane_visible = true; }
+            }
+        }
+
+        Row {
             Rectangle { min-height: 40px; }
         }
 
@@ -232,6 +299,21 @@ CargoUI := Window {
             text: status;
             wrap: word_wrap;
             overflow: elide;
+        }
+
+        deptree := Rectangle {
+            row: 2;
+            colspan: 4;
+            rowspan: 7;
+            property <float> animate_opacity: deptree_pane_visible ? 1 : 0;
+            animate animate_opacity { duration: 250ms; easing: ease; }
+
+            if (deptree.animate_opacity > 0.01) : DepTreePane {
+                model: root.deptree;
+                background: root.background;
+                opacity: parent.animate_opacity;
+                back => { deptree_pane_visible = false; }
+            }
         }
     }
 
