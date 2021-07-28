@@ -15,7 +15,12 @@ use std::rc::Rc;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc::UnboundedReceiver;
 
-sixtyfps::include_modules!();
+// FIXME: Re-enable clippy when sixtyfps generated code is clippy-clean.
+#[allow(clippy::all)]
+mod generated_code {
+    sixtyfps::include_modules!();
+}
+pub use generated_code::*;
 
 #[derive(Debug)]
 enum Message {
@@ -230,8 +235,7 @@ fn default_manifest() -> PathBuf {
     dunce::canonicalize(
         match std::env::args()
             .skip(1)
-            .skip_while(|a| a == "ui" || a.starts_with('-'))
-            .next()
+            .find(|a| a != "ui" && !a.starts_with('-'))
         {
             Some(p) => p.into(),
             None => std::env::current_dir().unwrap_or_default(),
@@ -321,7 +325,7 @@ async fn read_metadata(
         }
     }
 
-    let h = handle.clone();
+    let h = handle;
     sixtyfps::invoke_from_event_loop(move || {
         if let Some(h) = h.upgrade() {
             let model = Rc::new(DepGraphModel::from(depgraph_tree));
@@ -441,7 +445,7 @@ impl DepGraphModel {
     fn get_node(&self, path: &[usize]) -> &TreeNode {
         let mut path_iter = path.iter();
         let mut node = &self.tree[*path_iter.next().unwrap()];
-        while let Some(x) = path_iter.next() {
+        for x in path_iter {
             node = &node.children[*x];
         }
         node
