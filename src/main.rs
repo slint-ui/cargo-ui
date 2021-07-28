@@ -293,6 +293,8 @@ async fn read_metadata(
     let h = handle.clone();
     sixtyfps::invoke_from_event_loop(move || {
         if let Some(h) = h.upgrade() {
+            h.set_current_package(SharedString::default());
+            h.set_packages_count(packages.len() as i32);
             h.set_packages(ModelHandle::from(
                 Rc::new(VecModel::from(packages)) as Rc<dyn Model<Data = SharedString>>
             ));
