@@ -208,7 +208,7 @@ async fn run_cargo(
                     .count();
 
                 let result = if error_count == 0 && warning_count == 0 {
-                    "Build Successful ✅".into()
+                    "✅".into()
                 } else {
                     format!("{} errors; {} warnings", error_count, warning_count).into()
                 };
