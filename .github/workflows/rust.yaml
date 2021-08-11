@@ -21,7 +21,7 @@ jobs:
 
     - name: Install Linux Dependencies
       run: sudo apt-get install libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev
-      
+
     - name: Cache Qt
       id: cache-qt
       uses: actions/cache@v2
@@ -33,7 +33,7 @@ jobs:
       with:
         version: '5.15.2'
         cached: ${{ steps.cache-qt.outputs.cache-hit }}
-      
+
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
