@@ -193,7 +193,7 @@ CargoUI := Window {
             HorizontalLayout {
                 if (allow_package_selection): Text {
                     text: "Package:"; vertical-alignment: center; horizontal-alignment: right;
-                }            
+                }
             }
             HorizontalLayout {
                 if (allow_package_selection): ComboBox {
