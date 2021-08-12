@@ -1,0 +1,46 @@
+{
+    "version": "0.1",
+    "language": "en",
+    "languageSettings": [
+        {
+            "languageId": "rust",
+            "words": [
+                "clippy",
+                "depgraph",
+                "deptree",
+                "relayout"
+            ],
+            "ignoreRegExpList": [
+                "/#\\[cfg\\b.+\\]/",
+                "/#\\[repr\\b.+\\]/",
+                // Exclude crate paths
+                "/(\\b|::)[a-z0-9_]+::/",
+                "/::[a-z0-9_]+(\\b|::)/",
+                // Qt things:
+                "/\\bQt_[a-zA-Z0-9_]+/"
+            ]
+        },
+        {
+            "languageId": "markdown",
+            "words": [
+                "libfontconfig",
+                "libxcb",
+                "libxkbcommon",
+                "xfixes"
+            ],
+            "ignoreRegExpList": [
+                // Ignore simple code blocks
+                "`[^`]+`"
+            ]
+        }
+    ],
+    "words": [
+       "SPDX",
+       "sixtyfps"
+    ],
+    "ignorePaths": [
+        "cspell.json",
+        ".github/workflows/*.yaml",
+        "Cargo.toml"
+    ]
+}
