@@ -184,33 +184,36 @@ async fn run_cargo(
 
     handle.upgrade_in_event_loop(move |h| {
         h.set_status("Finished".into());
-            let model_handle = h.get_diagnostics();
-            let model = model_handle.as_any().downcast_ref::<VecModel<Diag>>().unwrap();
+        let model_handle = h.get_diagnostics();
+        let model = model_handle
+            .as_any()
+            .downcast_ref::<VecModel<Diag>>()
+            .unwrap();
 
-            if model.row_count() == 0 {
-                h.set_build_pane_visible(false);
-            }
+        if model.row_count() == 0 {
+            h.set_build_pane_visible(false);
+        }
 
-            let error_count = model
-                .iter()
-                .filter(|diagnostic| diagnostic.level == 1)
-                .count();
-            let warning_count = model
-                .iter()
-                .filter(|diagnostic| diagnostic.level == 2)
-                .count();
+        let error_count = model
+            .iter()
+            .filter(|diagnostic| diagnostic.level == 1)
+            .count();
+        let warning_count = model
+            .iter()
+            .filter(|diagnostic| diagnostic.level == 2)
+            .count();
 
-            let result = if error_count == 0 && warning_count == 0 {
-                "✅".into()
-            } else {
-                format!("{} errors; {} warnings", error_count, warning_count).into()
-            };
+        let result = if error_count == 0 && warning_count == 0 {
+            "✅".into()
+        } else {
+            format!("{} errors; {} warnings", error_count, warning_count).into()
+        };
 
-            match action.command.as_str() {
-                "build" => h.set_build_results(result),
-                "check" => h.set_check_results(result),
-                _ => {}
-            }
+        match action.command.as_str() {
+            "build" => h.set_build_results(result),
+            "check" => h.set_check_results(result),
+            _ => {}
+        }
     });
 
     Ok(())
