@@ -104,7 +104,6 @@ DepTreePane := Pane {
     VerticalBox {
         ListView {
             for dep in model : HorizontalLayout {
-                height: preferred_height; // FIXME: workaround bug fixed in sixtyfps 0.1.1
                 Rectangle { width: dep.indentation * 15px; }
                 Text {
                     text: !dep.has_children ? "" : dep.open ? "[-]" : "[+]";
@@ -169,9 +168,6 @@ CargoUI := Window {
     property <bool> build_pane_visible;
     property <bool> deptree_pane_visible;
     property <[DependencyNode]> deptree;
-
-    // required because of a bug in sixtyfps 0.1.0 (fixed by e633ee82)
-    property <Action> ignore_me;
 
     GridBox {
         Row {
