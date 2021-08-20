@@ -104,9 +104,6 @@ async fn run_cargo(
     manifest: Manifest,
     handle: sixtyfps::Weak<CargoUI>,
 ) -> tokio::io::Result<()> {
-    // FIXME: Would be nice if we did not need a thread_local
-    thread_local! {static DIAG_MODEL: std::cell::RefCell<Rc<VecModel<Diag>>> = Default::default()}
-
     handle.clone().upgrade_in_event_loop(|h| {
         h.set_status("".into());
         h.set_is_building(true);
@@ -114,7 +111,6 @@ async fn run_cargo(
         h.set_diagnostics(ModelHandle::from(
             diagnostics_model.clone() as Rc<dyn Model<Data = Diag>>
         ));
-        DIAG_MODEL.with(|tl| tl.replace(diagnostics_model));
     });
 
     struct ResetIsBuilding(sixtyfps::Weak<CargoUI>);
@@ -176,10 +172,10 @@ async fn run_cargo(
                 let msg = cargo_metadata::Message::deserialize(&mut deserializer).unwrap_or(cargo_metadata::Message::TextLine(line));
 
                 if let Some(diag) = cargo_message_to_diag(msg) {
-                    sixtyfps::invoke_from_event_loop(move || {
-                        DIAG_MODEL.with(|model| {
-                            model.borrow().push(diag)
-                        });
+                    handle.clone().upgrade_in_event_loop(move |h|{
+                        let model_handle = h.get_diagnostics();
+                        let model = model_handle.as_any().downcast_ref::<VecModel<Diag>>().unwrap();
+                        model.push(diag);
                     });
                 }
             }
@@ -188,8 +184,9 @@ async fn run_cargo(
 
     handle.upgrade_in_event_loop(move |h| {
         h.set_status("Finished".into());
-        DIAG_MODEL.with(|model| {
-            let model = model.borrow();
+            let model_handle = h.get_diagnostics();
+            let model = model_handle.as_any().downcast_ref::<VecModel<Diag>>().unwrap();
+
             if model.row_count() == 0 {
                 h.set_build_pane_visible(false);
             }
@@ -214,7 +211,6 @@ async fn run_cargo(
                 "check" => h.set_check_results(result),
                 _ => {}
             }
-        })
     });
 
     Ok(())
