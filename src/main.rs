@@ -107,17 +107,14 @@ async fn run_cargo(
     // FIXME: Would be nice if we did not need a thread_local
     thread_local! {static DIAG_MODEL: std::cell::RefCell<Rc<VecModel<Diag>>> = Default::default()}
 
-    let h = handle.clone();
-    sixtyfps::invoke_from_event_loop(move || {
-        if let Some(h) = h.upgrade() {
-            h.set_status("".into());
-            h.set_is_building(true);
-            let diagnostics_model = Rc::new(VecModel::<Diag>::default());
-            h.set_diagnostics(ModelHandle::from(
-                diagnostics_model.clone() as Rc<dyn Model<Data = Diag>>
-            ));
-            DIAG_MODEL.with(|tl| tl.replace(diagnostics_model));
-        }
+    handle.clone().upgrade_in_event_loop(|h| {
+        h.set_status("".into());
+        h.set_is_building(true);
+        let diagnostics_model = Rc::new(VecModel::<Diag>::default());
+        h.set_diagnostics(ModelHandle::from(
+            diagnostics_model.clone() as Rc<dyn Model<Data = Diag>>
+        ));
+        DIAG_MODEL.with(|tl| tl.replace(diagnostics_model));
     });
 
     struct ResetIsBuilding(sixtyfps::Weak<CargoUI>);
@@ -189,37 +186,35 @@ async fn run_cargo(
         }
     }
 
-    sixtyfps::invoke_from_event_loop(move || {
-        if let Some(h) = handle.upgrade() {
-            h.set_status("Finished".into());
-            DIAG_MODEL.with(|model| {
-                let model = model.borrow();
-                if model.row_count() == 0 {
-                    h.set_build_pane_visible(false);
-                }
+    handle.upgrade_in_event_loop(move |h| {
+        h.set_status("Finished".into());
+        DIAG_MODEL.with(|model| {
+            let model = model.borrow();
+            if model.row_count() == 0 {
+                h.set_build_pane_visible(false);
+            }
 
-                let error_count = model
-                    .iter()
-                    .filter(|diagnostic| diagnostic.level == 1)
-                    .count();
-                let warning_count = model
-                    .iter()
-                    .filter(|diagnostic| diagnostic.level == 2)
-                    .count();
+            let error_count = model
+                .iter()
+                .filter(|diagnostic| diagnostic.level == 1)
+                .count();
+            let warning_count = model
+                .iter()
+                .filter(|diagnostic| diagnostic.level == 2)
+                .count();
 
-                let result = if error_count == 0 && warning_count == 0 {
-                    "✅".into()
-                } else {
-                    format!("{} errors; {} warnings", error_count, warning_count).into()
-                };
+            let result = if error_count == 0 && warning_count == 0 {
+                "✅".into()
+            } else {
+                format!("{} errors; {} warnings", error_count, warning_count).into()
+            };
 
-                match action.command.as_str() {
-                    "build" => h.set_build_results(result),
-                    "check" => h.set_check_results(result),
-                    _ => {}
-                }
-            })
-        }
+            match action.command.as_str() {
+                "build" => h.set_build_results(result),
+                "check" => h.set_check_results(result),
+                _ => {}
+            }
+        })
     });
 
     Ok(())
