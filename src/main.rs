@@ -292,18 +292,15 @@ async fn read_metadata(
     handle: sixtyfps::Weak<CargoUI>,
     output: &RefCell<Option<Metadata>>,
 ) -> tokio::io::Result<()> {
-    let h = handle.clone();
     let manifest_str = manifest
         .path_to_cargo_toml()
         .to_string_lossy()
         .as_ref()
         .into();
-    sixtyfps::invoke_from_event_loop(move || {
-        if let Some(h) = h.upgrade() {
-            h.set_workspace_valid(false);
-            h.set_manifest_path(manifest_str);
-            h.set_status("Loading metadata from Cargo.toml...".into());
-        }
+    handle.clone().upgrade_in_event_loop(move |h| {
+        h.set_workspace_valid(false);
+        h.set_manifest_path(manifest_str);
+        h.set_status("Loading metadata from Cargo.toml...".into());
     });
 
     let mut cmd = cargo_metadata::MetadataCommand::new();
@@ -311,10 +308,8 @@ async fn read_metadata(
     *output.borrow_mut() = match cmd.exec() {
         Ok(metadata) => Some(metadata),
         Err(e) => {
-            sixtyfps::invoke_from_event_loop(move || {
-                if let Some(h) = handle.upgrade() {
-                    h.set_status(format!("{}", e).into());
-                }
+            handle.upgrade_in_event_loop(move |h| {
+                h.set_status(format!("{}", e).into());
             });
             None
         }
@@ -360,27 +355,24 @@ fn apply_metadata(
             }
         }
     }
-    let h = handle.clone();
     let pkg = package.clone();
-    sixtyfps::invoke_from_event_loop(move || {
-        if let Some(h) = h.upgrade() {
-            h.set_current_package(pkg);
-            // The model always has at least two entries, one for all and the first package,
-            // so enable multi-package selection only if there is something else to select.
-            h.set_allow_package_selection(packages.len() > 2);
-            h.set_packages(ModelHandle::from(
-                Rc::new(VecModel::from(packages)) as Rc<dyn Model<Data = SharedString>>
-            ));
-            h.set_extra_run(ModelHandle::from(
-                Rc::new(VecModel::from(run_target)) as Rc<dyn Model<Data = SharedString>>
-            ));
-            h.set_has_extra_tests(!test_target.is_empty());
-            h.set_extra_test(ModelHandle::from(
-                Rc::new(VecModel::from(test_target)) as Rc<dyn Model<Data = SharedString>>
-            ));
-            h.set_status("Cargo.toml loaded".into());
-            h.set_workspace_valid(true);
-        }
+    handle.clone().upgrade_in_event_loop(move |h| {
+        h.set_current_package(pkg);
+        // The model always has at least two entries, one for all and the first package,
+        // so enable multi-package selection only if there is something else to select.
+        h.set_allow_package_selection(packages.len() > 2);
+        h.set_packages(ModelHandle::from(
+            Rc::new(VecModel::from(packages)) as Rc<dyn Model<Data = SharedString>>
+        ));
+        h.set_extra_run(ModelHandle::from(
+            Rc::new(VecModel::from(run_target)) as Rc<dyn Model<Data = SharedString>>
+        ));
+        h.set_has_extra_tests(!test_target.is_empty());
+        h.set_extra_test(ModelHandle::from(
+            Rc::new(VecModel::from(test_target)) as Rc<dyn Model<Data = SharedString>>
+        ));
+        h.set_status("Cargo.toml loaded".into());
+        h.set_workspace_valid(true);
     });
 
     let mut depgraph_tree = Vec::new();
@@ -395,12 +387,9 @@ fn apply_metadata(
         }
     }
 
-    let h = handle;
-    sixtyfps::invoke_from_event_loop(move || {
-        if let Some(h) = h.upgrade() {
-            let model = Rc::new(DepGraphModel::from(depgraph_tree));
-            h.set_deptree(ModelHandle::new(model))
-        }
+    handle.upgrade_in_event_loop(move |h| {
+        let model = Rc::new(DepGraphModel::from(depgraph_tree));
+        h.set_deptree(ModelHandle::new(model))
     });
 }
 

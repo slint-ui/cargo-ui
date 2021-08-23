@@ -198,8 +198,6 @@ CargoUI := Window {
                 ComboBox {
                     model: packages;
                     enabled: root.workspace_valid;
-                    // required because of bug in sixtyfps 0.1.0 (fixed by ee5386)
-                    min-height: open_button.min-height;
                     current_value <=> current_package;
                     selected(pkg) => { root.package_selected(pkg); }
                 }
