@@ -141,6 +141,8 @@ async fn run_cargo(
         } else {
             cargo_command.arg("--bin").arg(action.extra.as_str());
         }
+    } else if action.command == "test" && !action.extra.is_empty() {
+        cargo_command.arg("--test").arg(action.extra.as_str());
     }
     if !action.package.is_empty() {
         cargo_command.arg("-p").arg(action.package.as_str());
