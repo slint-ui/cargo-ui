@@ -168,6 +168,7 @@ CargoUI := Window {
     property <bool> build_pane_visible;
     property <bool> deptree_pane_visible;
     property <[DependencyNode]> deptree;
+    callback package_selected(string);
 
     GridBox {
         Row {
@@ -200,6 +201,7 @@ CargoUI := Window {
                     // required because of bug in sixtyfps 0.1.0 (fixed by ee5386)
                     min-height: open_button.min-height;
                     current_value <=> current_package;
+                    selected(pkg) => { root.package_selected(pkg); }
                 }
             }
             Text { text: "Profile: "; vertical-alignment: center; horizontal-alignment: right; }

@@ -27,6 +27,7 @@ enum Message {
     Quit,
     Action(Action),
     ReloadManifest(SharedString),
+    PackageSelected(SharedString),
     ShowOpenDialog,
     Cancel,
 }
@@ -49,6 +50,8 @@ fn main() {
     handle.on_show_open_dialog(move || send.send(Message::ShowOpenDialog).unwrap());
     let send = s.clone();
     handle.on_reload_manifest(move |m| send.send(Message::ReloadManifest(m)).unwrap());
+    let send = s.clone();
+    handle.on_package_selected(move |pkg| send.send(Message::PackageSelected(pkg)).unwrap());
     handle.run();
     let _ = s.send(Message::Quit);
     worker_thread.join().unwrap();
@@ -56,8 +59,11 @@ fn main() {
 
 async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<CargoUI>) {
     let mut manifest: Manifest = default_manifest().into();
-    let mut run_cargo_future: Option<Pin<Box<dyn Future<Output = tokio::io::Result<()>>>>> =
-        Some(Box::pin(read_metadata(manifest.clone(), handle.clone())));
+    let metadata: RefCell<Option<Metadata>> = Default::default();
+    let mut package = SharedString::default();
+    let mut run_cargo_future: Option<Pin<Box<dyn Future<Output = tokio::io::Result<()>>>>> = Some(
+        Box::pin(read_metadata(manifest.clone(), handle.clone(), &metadata)),
+    );
     loop {
         let m = if let Some(fut) = &mut run_cargo_future {
             tokio::select! {
@@ -67,6 +73,9 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
                 res = fut => {
                     res.unwrap();
                     run_cargo_future = None;
+                    if let Some(metadata) = &*metadata.borrow() {
+                        apply_metadata(metadata, &mut package, handle.clone())
+                    }
                     r.recv().await
                 }
             }
@@ -89,11 +98,25 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
             }
             Some(Message::ReloadManifest(m)) => {
                 manifest = PathBuf::from(m.as_str()).into();
-                run_cargo_future = Some(Box::pin(read_metadata(manifest.clone(), handle.clone())));
+                run_cargo_future = Some(Box::pin(read_metadata(
+                    manifest.clone(),
+                    handle.clone(),
+                    &metadata,
+                )));
             }
             Some(Message::ShowOpenDialog) => {
                 manifest = show_open_dialog(manifest);
-                run_cargo_future = Some(Box::pin(read_metadata(manifest.clone(), handle.clone())));
+                run_cargo_future = Some(Box::pin(read_metadata(
+                    manifest.clone(),
+                    handle.clone(),
+                    &metadata,
+                )));
+            }
+            Some(Message::PackageSelected(pkg)) => {
+                package = pkg;
+                if let Some(metadata) = &*metadata.borrow() {
+                    apply_metadata(metadata, &mut package, handle.clone())
+                }
             }
         }
     }
@@ -267,6 +290,7 @@ fn default_manifest() -> PathBuf {
 async fn read_metadata(
     manifest: Manifest,
     handle: sixtyfps::Weak<CargoUI>,
+    output: &RefCell<Option<Metadata>>,
 ) -> tokio::io::Result<()> {
     let h = handle.clone();
     let manifest_str = manifest
@@ -284,26 +308,48 @@ async fn read_metadata(
 
     let mut cmd = cargo_metadata::MetadataCommand::new();
     cmd.manifest_path(manifest.path_to_cargo_toml());
-    let metadata = match cmd.exec() {
-        Ok(metadata) => metadata,
+    *output.borrow_mut() = match cmd.exec() {
+        Ok(metadata) => Some(metadata),
         Err(e) => {
             sixtyfps::invoke_from_event_loop(move || {
                 if let Some(h) = handle.upgrade() {
                     h.set_status(format!("{}", e).into());
                 }
             });
-            return Ok(());
+            None
         }
     };
+    Ok(())
+}
+
+fn apply_metadata(
+    metadata: &Metadata,
+    package: &mut SharedString,
+    handle: sixtyfps::Weak<CargoUI>,
+) {
     let mut packages = vec![SharedString::default()]; // keep one empty row
     let mut run_target = Vec::new();
     let mut test_target = Vec::new();
+    if !package.is_empty()
+        && !metadata
+            .packages
+            .iter()
+            .filter(|p| metadata.workspace_members.contains(&p.id))
+            .any(|p| package == p.name.as_str())
+    {
+        // if the selected package don't exist in the manifest, deselect it
+        *package = SharedString::default();
+    };
+
     for p in metadata
         .packages
         .iter()
         .filter(|p| metadata.workspace_members.contains(&p.id))
     {
         packages.push(p.name.as_str().into());
+        if !package.is_empty() && package != p.name.as_str() {
+            continue;
+        }
         for t in &p.targets {
             if t.kind.iter().any(|x| x == "bin") {
                 run_target.push(SharedString::from(t.name.as_str()));
@@ -315,9 +361,10 @@ async fn read_metadata(
         }
     }
     let h = handle.clone();
+    let package = package.clone();
     sixtyfps::invoke_from_event_loop(move || {
         if let Some(h) = h.upgrade() {
-            h.set_current_package(SharedString::default());
+            h.set_current_package(package);
             // The model always has at least two entries, one for all and the first package,
             // so enable multi-package selection only if there is something else to select.
             h.set_allow_package_selection(packages.len() > 2);
@@ -352,7 +399,6 @@ async fn read_metadata(
             h.set_deptree(ModelHandle::new(model))
         }
     });
-    Ok(())
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
