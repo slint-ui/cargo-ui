@@ -361,10 +361,10 @@ fn apply_metadata(
         }
     }
     let h = handle.clone();
-    let package = package.clone();
+    let pkg = package.clone();
     sixtyfps::invoke_from_event_loop(move || {
         if let Some(h) = h.upgrade() {
-            h.set_current_package(package);
+            h.set_current_package(pkg);
             // The model always has at least two entries, one for all and the first package,
             // so enable multi-package selection only if there is something else to select.
             h.set_allow_package_selection(packages.len() > 2);
@@ -388,6 +388,9 @@ fn apply_metadata(
         let mut duplicates = HashSet::new();
         let map: HashMap<_, _> = resolve.nodes.iter().map(|n| (n.id.clone(), n)).collect();
         for m in &metadata.workspace_members {
+            if !package.is_empty() && package != metadata[m].name.as_str() {
+                continue;
+            }
             build_dep_tree(m, &mut depgraph_tree, &mut duplicates, &metadata, &map, 0);
         }
     }
