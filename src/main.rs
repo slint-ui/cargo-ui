@@ -25,7 +25,10 @@ pub use generated_code::*;
 #[derive(Debug)]
 enum Message {
     Quit,
-    Action(Action),
+    Action {
+        action: Action,
+        enabled_features: Vec<String>,
+    },
     ReloadManifest(SharedString),
     PackageSelected(SharedString),
     ShowOpenDialog,
@@ -43,7 +46,31 @@ fn main() {
     });
     handle.set_workspace_valid(false);
     let send = s.clone();
-    handle.on_action(move |action| send.send(Message::Action(action)).unwrap());
+
+    let handle_weak = handle.as_weak();
+    let get_enabled_features = move || {
+        handle_weak
+            .upgrade()
+            .unwrap()
+            .get_package_features()
+            .iter()
+            .filter_map(|feature| {
+                if feature.enabled {
+                    Some(feature.name.into())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<String>>()
+    };
+
+    handle.on_action(move |action| {
+        send.send(Message::Action {
+            action,
+            enabled_features: get_enabled_features(),
+        })
+        .unwrap()
+    });
     let send = s.clone();
     handle.on_cancel(move || send.send(Message::Cancel).unwrap());
     let send = s.clone();
@@ -61,6 +88,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
     let mut manifest: Manifest = default_manifest().into();
     let metadata: RefCell<Option<Metadata>> = Default::default();
     let mut package = SharedString::default();
+    let mut update_features = true;
     let mut run_cargo_future: Option<Pin<Box<dyn Future<Output = tokio::io::Result<()>>>>> = Some(
         Box::pin(read_metadata(manifest.clone(), handle.clone(), &metadata)),
     );
@@ -74,7 +102,8 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
                     res.unwrap();
                     run_cargo_future = None;
                     if let Some(metadata) = &*metadata.borrow() {
-                        apply_metadata(metadata, &mut package, handle.clone())
+                        apply_metadata(metadata, update_features, &mut package, handle.clone());
+                        update_features = false;
                     }
                     r.recv().await
                 }
@@ -86,9 +115,13 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
         match m {
             None => return,
             Some(Message::Quit) => return,
-            Some(Message::Action(action)) => {
+            Some(Message::Action {
+                action,
+                enabled_features,
+            }) => {
                 run_cargo_future = Some(Box::pin(run_cargo(
                     action,
+                    enabled_features,
                     manifest.clone(),
                     handle.clone(),
                 )));
@@ -98,6 +131,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
             }
             Some(Message::ReloadManifest(m)) => {
                 manifest = PathBuf::from(m.as_str()).into();
+                update_features = true;
                 run_cargo_future = Some(Box::pin(read_metadata(
                     manifest.clone(),
                     handle.clone(),
@@ -106,6 +140,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
             }
             Some(Message::ShowOpenDialog) => {
                 manifest = show_open_dialog(manifest);
+                update_features = true;
                 run_cargo_future = Some(Box::pin(read_metadata(
                     manifest.clone(),
                     handle.clone(),
@@ -114,8 +149,10 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
             }
             Some(Message::PackageSelected(pkg)) => {
                 package = pkg;
+                update_features = true;
                 if let Some(metadata) = &*metadata.borrow() {
-                    apply_metadata(metadata, &mut package, handle.clone())
+                    apply_metadata(metadata, update_features, &mut package, handle.clone());
+                    update_features = false;
                 }
             }
         }
@@ -124,6 +161,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
 
 async fn run_cargo(
     action: Action,
+    enabled_features: Vec<String>,
     manifest: Manifest,
     handle: sixtyfps::Weak<CargoUI>,
 ) -> tokio::io::Result<()> {
@@ -169,6 +207,11 @@ async fn run_cargo(
     }
     if !action.package.is_empty() {
         cargo_command.arg("-p").arg(action.package.as_str());
+    }
+    if !enabled_features.is_empty() {
+        cargo_command
+            .arg("--features")
+            .arg(enabled_features.join(","));
     }
     let mut res = cargo_command
         .args(&["--message-format", "json"])
@@ -319,12 +362,14 @@ async fn read_metadata(
 
 fn apply_metadata(
     metadata: &Metadata,
+    update_features: bool,
     package: &mut SharedString,
     handle: sixtyfps::Weak<CargoUI>,
 ) {
     let mut packages = vec![SharedString::default()]; // keep one empty row
     let mut run_target = Vec::new();
     let mut test_target = Vec::new();
+    let mut features = None;
     if !package.is_empty()
         && !metadata
             .packages
@@ -354,6 +399,25 @@ fn apply_metadata(
                 test_target.push(SharedString::from(t.name.as_str()));
             }
         }
+
+        if update_features {
+            let default_features: HashSet<_> = p
+                .features
+                .get("default")
+                .map(|default_features| default_features.iter().cloned().collect())
+                .unwrap_or_default();
+
+            features = p
+                .features
+                .keys()
+                .filter(|name| *name != "default")
+                .map(|name| Feature {
+                    name: name.into(),
+                    enabled: default_features.contains(name),
+                })
+                .collect::<Vec<_>>()
+                .into();
+        }
     }
     let pkg = package.clone();
     handle.clone().upgrade_in_event_loop(move |h| {
@@ -371,6 +435,12 @@ fn apply_metadata(
         h.set_extra_test(ModelHandle::from(
             Rc::new(VecModel::from(test_target)) as Rc<dyn Model<Data = SharedString>>
         ));
+        if let Some(features) = features {
+            h.set_has_features(!features.is_empty());
+            h.set_package_features(ModelHandle::from(
+                Rc::new(VecModel::from(features)) as Rc<dyn Model<Data = Feature>>
+            ));
+        }
         h.set_status("Cargo.toml loaded".into());
         h.set_workspace_valid(true);
     });

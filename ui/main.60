@@ -2,7 +2,10 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-import {ComboBox, VerticalBox, HorizontalBox, GridBox, Button, LineEdit, ListView} from "sixtyfps_widgets.60";
+import {
+    ComboBox, VerticalBox, HorizontalBox, GridBox, Button,
+    LineEdit, ListView, GroupBox, CheckBox
+} from "sixtyfps_widgets.60";
 
 struct Diag := {
     short: string,
@@ -143,6 +146,12 @@ Debug_DepTreePane := Window {
 }
 */
 
+
+export struct Feature := {
+    name: string,
+    enabled: bool,
+}
+
 CargoUI := Window {
     title: "Cargo UI";
     preferred_height: 500px;
@@ -168,6 +177,8 @@ CargoUI := Window {
     property <bool> build_pane_visible;
     property <bool> deptree_pane_visible;
     property <[DependencyNode]> deptree;
+    property <bool> has_features;
+    property <[Feature]> package_features;
     callback package_selected(string);
 
     GridBox {
@@ -232,6 +243,26 @@ CargoUI := Window {
             bin_cb := ComboBox {
                 model: extra_run;
                 enabled: root.workspace_valid;
+            }
+
+            VerticalLayout {
+                rowspan: 5;
+                colspan: 3;
+                if has-features: GroupBox {
+                    title: "Features";
+
+                    ListView {
+                        for feature in package-features:  HorizontalLayout {
+                            CheckBox {
+                                text: feature.name;
+                                checked: feature.enabled;
+                                toggled => {
+                                    feature.enabled = checked;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
