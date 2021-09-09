@@ -248,7 +248,7 @@ CargoUI := Window {
             }
 
             VerticalLayout {
-                rowspan: 5;
+                rowspan: 6;
                 colspan: 3;
                 GroupBox {
                     title: "Features";
