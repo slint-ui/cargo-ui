@@ -150,6 +150,7 @@ Debug_DepTreePane := Window {
 export struct Feature := {
     name: string,
     enabled: bool,
+    enabled_by_default: bool,
 }
 
 CargoUI := Window {
@@ -179,6 +180,7 @@ CargoUI := Window {
     property <[DependencyNode]> deptree;
     property <bool> has_features;
     property <[Feature]> package_features;
+    property <bool> enable-default-features;
     callback package_selected(string);
 
     GridBox {
@@ -248,19 +250,29 @@ CargoUI := Window {
             VerticalLayout {
                 rowspan: 5;
                 colspan: 3;
-                if has-features: GroupBox {
+                GroupBox {
                     title: "Features";
-
-                    ListView {
-                        for feature in package-features:  HorizontalLayout {
-                            CheckBox {
-                                text: feature.name;
-                                checked: feature.enabled;
-                                toggled => {
-                                    feature.enabled = checked;
+                    VerticalBox {
+                        CheckBox {
+                            text: "Enable Default Features";
+                            checked <=> root.enable-default-features;
+                            enabled: true;
+                        }
+                        if has-features: ListView {
+                            for feature in package-features:  HorizontalLayout {
+                                CheckBox {
+                                    text: feature.name + (!enabled ? " (enabled by default)" : "");
+                                    checked: feature.enabled;
+                                    enabled: !feature.enabled_by_default || !root.enable-default-features;
+                                    toggled => {
+                                        feature.enabled = checked;
+                                    }
                                 }
                             }
                         }
+                        /*
+                        if !has-features: Rectangle {
+                        }*/
                     }
                 }
             }

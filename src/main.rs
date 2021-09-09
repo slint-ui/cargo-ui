@@ -24,11 +24,17 @@ mod generated_code {
 pub use generated_code::*;
 
 #[derive(Debug)]
+struct FeatureSettings {
+    enabled_features: Vec<SharedString>,
+    enable_default_features: bool,
+}
+
+#[derive(Debug)]
 enum Message {
     Quit,
     Action {
         action: Action,
-        enabled_features: Vec<SharedString>,
+        feature_settings: FeatureSettings,
     },
     ReloadManifest(SharedString),
     PackageSelected(SharedString),
@@ -49,26 +55,10 @@ fn main() {
     let send = s.clone();
 
     let handle_weak = handle.as_weak();
-    let get_enabled_features = move || {
-        handle_weak
-            .upgrade()
-            .unwrap()
-            .get_package_features()
-            .iter()
-            .filter_map(|feature| {
-                if feature.enabled {
-                    Some(feature.name.clone())
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<SharedString>>()
-    };
-
     handle.on_action(move |action| {
         send.send(Message::Action {
             action,
-            enabled_features: get_enabled_features(),
+            feature_settings: FeatureSettings::new(&handle_weak.upgrade().unwrap()),
         })
         .unwrap()
     });
@@ -118,11 +108,11 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
             Some(Message::Quit) => return,
             Some(Message::Action {
                 action,
-                enabled_features,
+                feature_settings,
             }) => {
                 run_cargo_future = Some(Box::pin(run_cargo(
                     action,
-                    enabled_features,
+                    feature_settings,
                     manifest.clone(),
                     handle.clone(),
                 )));
@@ -162,7 +152,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
 
 async fn run_cargo(
     action: Action,
-    enabled_features: Vec<SharedString>,
+    features: FeatureSettings,
     manifest: Manifest,
     handle: sixtyfps::Weak<CargoUI>,
 ) -> tokio::io::Result<()> {
@@ -209,11 +199,7 @@ async fn run_cargo(
     if !action.package.is_empty() {
         cargo_command.arg("-p").arg(action.package.as_str());
     }
-    if !enabled_features.is_empty() {
-        cargo_command
-            .arg("--features")
-            .arg(enabled_features.iter().join(","));
-    }
+    features.to_args(&mut cargo_command);
     let mut res = cargo_command
         .args(&["--message-format", "json"])
         .stdout(std::process::Stdio::piped())
@@ -414,7 +400,8 @@ fn apply_metadata(
                 .filter(|name| *name != "default")
                 .map(|name| Feature {
                     name: name.into(),
-                    enabled: default_features.contains(name),
+                    enabled: false,
+                    enabled_by_default: default_features.contains(name),
                 })
                 .collect::<Vec<_>>()
                 .into();
@@ -438,6 +425,7 @@ fn apply_metadata(
         ));
         if let Some(features) = features {
             h.set_has_features(!features.is_empty());
+            h.set_enable_default_features(true);
             h.set_package_features(ModelHandle::from(
                 Rc::new(VecModel::from(features)) as Rc<dyn Model<Data = Feature>>
             ));
@@ -643,5 +631,39 @@ impl Manifest {
 
     fn path_to_cargo_toml(&self) -> &Path {
         &self.0
+    }
+}
+
+impl FeatureSettings {
+    fn new(ui: &CargoUI) -> Self {
+        let enable_default_features = ui.get_enable_default_features();
+        let enabled_features = ui
+            .get_package_features()
+            .iter()
+            .filter_map(|feature| {
+                if (feature.enabled && !feature.enabled_by_default && enable_default_features)
+                    || (feature.enabled && !enable_default_features)
+                {
+                    Some(feature.name.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        Self {
+            enabled_features,
+            enable_default_features,
+        }
+    }
+
+    fn to_args(&self, process: &mut tokio::process::Command) {
+        if !self.enable_default_features {
+            process.arg("--no-default-features");
+        }
+        if !self.enabled_features.is_empty() {
+            process
+                .arg("--features")
+                .arg(self.enabled_features.iter().join(","));
+        }
     }
 }
