@@ -14,6 +14,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc::UnboundedReceiver;
+use itertools::Itertools;
 
 // FIXME: Re-enable clippy when sixtyfps generated code is clippy-clean.
 #[allow(clippy::all)]
@@ -27,7 +28,7 @@ enum Message {
     Quit,
     Action {
         action: Action,
-        enabled_features: Vec<String>,
+        enabled_features: Vec<SharedString>,
     },
     ReloadManifest(SharedString),
     PackageSelected(SharedString),
@@ -56,12 +57,12 @@ fn main() {
             .iter()
             .filter_map(|feature| {
                 if feature.enabled {
-                    Some(feature.name.into())
+                    Some(feature.name.clone())
                 } else {
                     None
                 }
             })
-            .collect::<Vec<String>>()
+            .collect::<Vec<SharedString>>()
     };
 
     handle.on_action(move |action| {
@@ -161,7 +162,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
 
 async fn run_cargo(
     action: Action,
-    enabled_features: Vec<String>,
+    enabled_features: Vec<SharedString>,
     manifest: Manifest,
     handle: sixtyfps::Weak<CargoUI>,
 ) -> tokio::io::Result<()> {
@@ -211,7 +212,7 @@ async fn run_cargo(
     if !enabled_features.is_empty() {
         cargo_command
             .arg("--features")
-            .arg(enabled_features.join(","));
+            .arg(enabled_features.iter().join(","));
     }
     let mut res = cargo_command
         .args(&["--message-format", "json"])
