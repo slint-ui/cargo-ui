@@ -188,14 +188,12 @@ CargoUI := Window {
 
         Row {
             HorizontalLayout {
-                // Should be if(allow_package_selection) but blocked by sixtyfpsui/sixtyfps#422
-                Text {
+                if allow_package_selection: Text {
                     text: "Package:"; vertical-alignment: center; horizontal-alignment: right;
                 }
             }
             HorizontalLayout {
-                // Should be if(allow_package_selection) but blocked by sixtyfpsui/sixtyfps#422
-                ComboBox {
+                if allow_package_selection: ComboBox {
                     model: packages;
                     enabled: root.workspace_valid;
                     current_value <=> current_package;
