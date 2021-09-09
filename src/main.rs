@@ -4,6 +4,7 @@
 
 use cargo_metadata::{diagnostic::DiagnosticLevel, Metadata, Node, PackageId};
 
+use itertools::Itertools;
 use serde::Deserialize;
 use sixtyfps::{Model, ModelHandle, SharedString, VecModel};
 use std::cell::RefCell;
@@ -14,7 +15,6 @@ use std::pin::Pin;
 use std::rc::Rc;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc::UnboundedReceiver;
-use itertools::Itertools;
 
 // FIXME: Re-enable clippy when sixtyfps generated code is clippy-clean.
 #[allow(clippy::all)]
