@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use super::CargoUI;
+use super::{CargoUI, Toolchain};
 use sixtyfps::{ComponentHandle, Model, ModelHandle, SharedString, VecModel};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -74,12 +74,19 @@ async fn refresh_toolchains(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Resul
     let mut toolchains = Vec::new();
 
     while let Some(line) = stdout.next_line().await? {
-        toolchains.push(line.into());
+        let name: SharedString = line.into();
+        toolchains.push({
+            let default = name.contains("(default)");
+            Toolchain {
+                name,
+                default,
+            }
+        });
     }
 
     handle.upgrade_in_event_loop(|ui| {
         ui.set_toolchains(ModelHandle::from(
-            Rc::new(VecModel::from(toolchains)) as Rc<dyn Model<Data = SharedString>>
+            Rc::new(VecModel::from(toolchains)) as Rc<dyn Model<Data = Toolchain>>
         ));
     });
 

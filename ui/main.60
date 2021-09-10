@@ -153,6 +153,11 @@ export struct Feature := {
     enabled_by_default: bool,
 }
 
+export struct Toolchain := {
+    name: string,
+    default: bool
+}
+
 CargoUI := Window {
     title: "Cargo UI";
     preferred_height: 500px;
@@ -183,7 +188,7 @@ CargoUI := Window {
     property <bool> enable-default-features;
     callback package_selected(string);
 
-    property <[string]> toolchains;
+    property <[Toolchain]> toolchains;
 
     VerticalBox {
 
@@ -394,7 +399,8 @@ CargoUI := Window {
                         alignment: start;
 
                         for toolchain in toolchains: Text {
-                            text: toolchain;
+                            text: toolchain.name;
+                            font-weight: toolchain.default ? 800 : 400;
                         }
                     }
                 }
