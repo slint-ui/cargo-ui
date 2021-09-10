@@ -4,7 +4,7 @@
 
 import {
     ComboBox, VerticalBox, HorizontalBox, GridBox, Button,
-    LineEdit, ListView, GroupBox, CheckBox
+    LineEdit, ListView, GroupBox, CheckBox, TabWidget
 } from "sixtyfps_widgets.60";
 
 struct Diag := {
@@ -183,197 +183,208 @@ CargoUI := Window {
     property <bool> enable-default-features;
     callback package_selected(string);
 
-    GridBox {
-        Row {
-            Text { text: "Manifest:"; vertical-alignment: center; horizontal-alignment: right; }
-            HorizontalLayout {
-                colspan: 3;
-                le_manifest := LineEdit {
-                    accepted => { root.reload_manifest(le_manifest.text); }
-                    horizontal_stretch: 1;
-                }
-                open_button := Button {
-                    text: "📂";
-                    clicked => { root.show_open_dialog(); }
-                }
-            }
-        }
+    VerticalBox {
 
-        Row {
-            HorizontalLayout {
-                if allow_package_selection: Text {
-                    text: "Package:"; vertical-alignment: center; horizontal-alignment: right;
-                }
-            }
-            HorizontalLayout {
-                if allow_package_selection: ComboBox {
-                    model: packages;
-                    enabled: root.workspace_valid;
-                    current_value <=> current_package;
-                    selected(pkg) => { root.package_selected(pkg); }
-                }
-            }
-            Text { text: "Profile: "; vertical-alignment: center; horizontal-alignment: right; }
-            mode_cb := ComboBox {
-                current_value: "debug";
-                model: ["debug", "release"];
-                enabled: root.workspace_valid;
-            }
-            //Text { text: "Toolchain: "; }
-            //profile_cb := ComboBox { model: ["stable", "nightly"]; }
-        }
+        TabWidget {
+            Tab {
+                title: "Project / Workspace";
 
-        Row {
-            Rectangle { height: 40px; }
-        }
-
-
-        Row {
-            Button {
-                text: "🚀 Run";
-                enabled: root.workspace_valid;
-                clicked => {
-                    build_pane_visible = true;
-                    action({
-                        command: "run",
-                        package: current_package,
-                        profile: mode_cb.current_value,
-                        extra: bin_cb.current_value
-                    });
-                }
-            }
-            bin_cb := ComboBox {
-                model: extra_run;
-                enabled: root.workspace_valid;
-            }
-
-            VerticalLayout {
-                rowspan: 6;
-                colspan: 3;
-                GroupBox {
-                    title: "Features";
-                    VerticalBox {
-                        // Needed to work around https://github.com/sixtyfpsui/sixtyfps/issues/487
-                        vertical-stretch: 1;
-                        CheckBox {
-                            text: "Enable Default Features";
-                            checked <=> root.enable-default-features;
-                            enabled: true;
+                GridBox {
+                    Row {
+                        Text { text: "Manifest:"; vertical-alignment: center; horizontal-alignment: right; }
+                        HorizontalLayout {
+                            colspan: 3;
+                            le_manifest := LineEdit {
+                                accepted => { root.reload_manifest(le_manifest.text); }
+                                horizontal_stretch: 1;
+                            }
+                            open_button := Button {
+                                text: "📂";
+                                clicked => { root.show_open_dialog(); }
+                            }
                         }
-                        if has-features: ListView {
-                            for feature in package-features:  HorizontalLayout {
-                                CheckBox {
-                                    text: feature.name + (!enabled ? " (enabled by default)" : "");
-                                    checked: feature.enabled;
-                                    enabled: !feature.enabled_by_default || !root.enable-default-features;
-                                    toggled => {
-                                        feature.enabled = checked;
+                    }
+
+                    Row {
+                        HorizontalLayout {
+                            if allow_package_selection: Text {
+                                text: "Package:"; vertical-alignment: center; horizontal-alignment: right;
+                            }
+                        }
+                        HorizontalLayout {
+                            if allow_package_selection: ComboBox {
+                                model: packages;
+                                enabled: root.workspace_valid;
+                                current_value <=> current_package;
+                                selected(pkg) => { root.package_selected(pkg); }
+                            }
+                        }
+                        Text { text: "Profile: "; vertical-alignment: center; horizontal-alignment: right; }
+                        mode_cb := ComboBox {
+                            current_value: "debug";
+                            model: ["debug", "release"];
+                            enabled: root.workspace_valid;
+                        }
+                        //Text { text: "Toolchain: "; }
+                        //profile_cb := ComboBox { model: ["stable", "nightly"]; }
+                    }
+
+                    Row {
+                        Rectangle { height: 40px; }
+                    }
+
+
+                    Row {
+                        Button {
+                            text: "🚀 Run";
+                            enabled: root.workspace_valid;
+                            clicked => {
+                                build_pane_visible = true;
+                                action({
+                                    command: "run",
+                                    package: current_package,
+                                    profile: mode_cb.current_value,
+                                    extra: bin_cb.current_value
+                                });
+                            }
+                        }
+                        bin_cb := ComboBox {
+                            model: extra_run;
+                            enabled: root.workspace_valid;
+                        }
+
+                        VerticalLayout {
+                            rowspan: 6;
+                            colspan: 3;
+                            GroupBox {
+                                title: "Features";
+                                VerticalBox {
+                                    // Needed to work around https://github.com/sixtyfpsui/sixtyfps/issues/487
+                                    vertical-stretch: 1;
+                                    CheckBox {
+                                        text: "Enable Default Features";
+                                        checked <=> root.enable-default-features;
+                                        enabled: true;
+                                    }
+                                    if has-features: ListView {
+                                        for feature in package-features:  HorizontalLayout {
+                                            CheckBox {
+                                                text: feature.name + (!enabled ? " (enabled by default)" : "");
+                                                checked: feature.enabled;
+                                                enabled: !feature.enabled_by_default || !root.enable-default-features;
+                                                toggled => {
+                                                    feature.enabled = checked;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if !has-features: Rectangle {
+                                        // helper rectangle to ensure that the CheckBox is aligned to the top.
                                     }
                                 }
                             }
                         }
-                        if !has-features: Rectangle {
-                            // helper rectangle to ensure that the CheckBox is aligned to the top.
+                    }
+
+                    Row {
+                        Button {
+                            text: "🏗️ Build";
+                            enabled: root.workspace_valid;
+                            clicked => {
+                                build_pane_visible = true;
+                                action({
+                                    command: "build",
+                                    package: current_package,
+                                    profile: mode_cb.current_value,
+                                    extra: ""
+                                });
+                            }
+                        }
+                        build_results_label := Text {
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    Row {
+                        Button {
+                            text: "👍 Check";
+                            enabled: root.workspace_valid;
+                            clicked => {
+                                build_pane_visible = true;
+                                action({
+                                    command: "check",
+                                    package: current_package,
+                                    profile: mode_cb.current_value,
+                                    extra: ""
+                                });
+                            }
+                        }
+                        check_results_label := Text {
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    Row {
+                        Button {
+                            text: "🧪 Test";
+                            enabled: root.workspace_valid;
+                            clicked => {
+                                build_pane_visible = true;
+                                action({
+                                    command: "test",
+                                    package: current_package,
+                                    profile: mode_cb.current_value,
+                                    extra: test_cb.current_value,
+                                });
+                            }
+                        }
+                        test_cb := ComboBox {
+                            model: extra_test;
+                            enabled: root.workspace_valid && root.has_extra_tests;
+                        }
+                    }
+
+                    Row {
+                        Button {
+                            colspan: 2;
+                            text: "🌳 Show Dependencies";
+                            clicked => { deptree_pane_visible = true; }
+                        }
+                    }
+
+                    Row {
+                        Rectangle { min-height: 40px; }
+                    }
+
+                    Text {
+                        colspan: 3;
+                        text: status;
+                        wrap: word_wrap;
+                        overflow: elide;
+                    }
+
+                    deptree := Rectangle {
+                        row: 2;
+                        colspan: 4;
+                        rowspan: 7;
+                        property <float> animate_opacity: deptree_pane_visible ? 1 : 0;
+                        animate animate_opacity { duration: 250ms; easing: ease; }
+
+                        if (deptree.animate_opacity > 0.01) : DepTreePane {
+                            model: root.deptree;
+                            background: root.background;
+                            opacity: parent.animate_opacity;
+                            back => { deptree_pane_visible = false; }
                         }
                     }
                 }
             }
-        }
 
-        Row {
-            Button {
-                text: "🏗️ Build";
-                enabled: root.workspace_valid;
-                clicked => {
-                    build_pane_visible = true;
-                    action({
-                        command: "build",
-                        package: current_package,
-                        profile: mode_cb.current_value,
-                        extra: ""
-                    });
-                }
-            }
-            build_results_label := Text {
-                vertical-alignment: center;
-            }
-        }
-
-        Row {
-            Button {
-                text: "👍 Check";
-                enabled: root.workspace_valid;
-                clicked => {
-                    build_pane_visible = true;
-                    action({
-                        command: "check",
-                        package: current_package,
-                        profile: mode_cb.current_value,
-                        extra: ""
-                    });
-                }
-            }
-            check_results_label := Text {
-                vertical-alignment: center;
-            }
-        }
-
-        Row {
-            Button {
-                text: "🧪 Test";
-                enabled: root.workspace_valid;
-                clicked => {
-                    build_pane_visible = true;
-                    action({
-                        command: "test",
-                        package: current_package,
-                        profile: mode_cb.current_value,
-                        extra: test_cb.current_value,
-                    });
-                }
-            }
-            test_cb := ComboBox {
-                model: extra_test;
-                enabled: root.workspace_valid && root.has_extra_tests;
-            }
-        }
-
-        Row {
-            Button {
-                colspan: 2;
-                text: "🌳 Show Dependencies";
-                clicked => { deptree_pane_visible = true; }
-            }
-        }
-
-        Row {
-            Rectangle { min-height: 40px; }
-        }
-
-        Text {
-            colspan: 3;
-            text: status;
-            wrap: word_wrap;
-            overflow: elide;
-        }
-
-        deptree := Rectangle {
-            row: 2;
-            colspan: 4;
-            rowspan: 7;
-            property <float> animate_opacity: deptree_pane_visible ? 1 : 0;
-            animate animate_opacity { duration: 250ms; easing: ease; }
-
-            if (deptree.animate_opacity > 0.01) : DepTreePane {
-                model: root.deptree;
-                background: root.background;
-                opacity: parent.animate_opacity;
-                back => { deptree_pane_visible = false; }
+            Tab {
+                title: "Toolchains";
             }
         }
     }
-
-
 
     animated := Rectangle {
         width: 100%; height: 100%;
