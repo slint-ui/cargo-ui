@@ -11,11 +11,14 @@ pub use generated_code::*;
 
 mod cargo;
 use cargo::*;
+mod rustup;
+use rustup::*;
 
 fn main() {
     let cargo_ui = CargoUI::new();
 
     let cargo_worker = CargoWorker::new(&cargo_ui);
+    let rustup_worker = RustupWorker::new(&cargo_ui);
 
     cargo_ui.set_workspace_valid(false);
 
@@ -55,4 +58,5 @@ fn main() {
     cargo_ui.run();
 
     cargo_worker.join().unwrap();
+    rustup_worker.join().unwrap();
 }

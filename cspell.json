@@ -37,7 +37,8 @@
     "words": [
        "SPDX",
        "sixtyfps",
-       "Itertools"
+       "Itertools",
+       "rustup"
     ],
     "ignorePaths": [
         "cspell.json",
