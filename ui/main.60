@@ -253,7 +253,6 @@ CargoUI := Window {
                 GroupBox {
                     title: "Features";
                     VerticalBox {
-                        alignment: start;
                         // Needed to work around https://github.com/sixtyfpsui/sixtyfps/issues/487
                         vertical-stretch: 1;
                         CheckBox {
@@ -273,9 +272,9 @@ CargoUI := Window {
                                 }
                             }
                         }
-                        /*
                         if !has-features: Rectangle {
-                        }*/
+                            // helper rectangle to ensure that the CheckBox is aligned to the top.
+                        }
                     }
                 }
             }
