@@ -141,7 +141,12 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
             Some(Message::PackageSelected(pkg)) => {
                 package = pkg;
                 if let Some(metadata) = &*metadata.borrow() {
-                    apply_metadata(metadata, /*update features*/false, &mut package, handle.clone());
+                    apply_metadata(
+                        metadata,
+                        /*update features*/ false,
+                        &mut package,
+                        handle.clone(),
+                    );
                 }
             }
         }
