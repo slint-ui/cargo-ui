@@ -2,11 +2,16 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+use std::rc::Rc;
+
 use super::CargoUI;
-use sixtyfps::ComponentHandle;
+use sixtyfps::{ComponentHandle, Model, ModelHandle, SharedString, VecModel};
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
+#[derive(Debug)]
 pub enum RustupMessage {
+    RefreshToolChains,
     Quit,
 }
 
@@ -26,6 +31,7 @@ impl RustupWorker {
                     .block_on(rustup_worker_loop(r, handle_weak))
             }
         });
+        let _ = channel.send(RustupMessage::RefreshToolChains);
         Self {
             channel,
             worker_thread,
@@ -40,14 +46,42 @@ impl RustupWorker {
 
 async fn rustup_worker_loop(
     mut r: UnboundedReceiver<RustupMessage>,
-    _handle: sixtyfps::Weak<CargoUI>,
+    handle: sixtyfps::Weak<CargoUI>,
 ) {
     loop {
         let m = r.recv().await;
 
         match m {
             None => return,
+            Some(RustupMessage::RefreshToolChains) => {
+                refresh_toolchains(handle.clone()).await.unwrap();
+            }
             Some(RustupMessage::Quit) => return,
         }
     }
+}
+
+async fn refresh_toolchains(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Result<()> {
+    let mut rustup_command = tokio::process::Command::new("rustup");
+    rustup_command.arg("toolchain").arg("list");
+    let mut spawn_result = rustup_command
+        .stdout(std::process::Stdio::piped())
+        .kill_on_drop(true)
+        .spawn()?;
+
+    let mut stdout = BufReader::new(spawn_result.stdout.take().unwrap()).lines();
+
+    let mut toolchains = Vec::new();
+
+    while let Some(line) = stdout.next_line().await? {
+        toolchains.push(line.into());
+    }
+
+    handle.upgrade_in_event_loop(|ui| {
+        ui.set_toolchains(ModelHandle::from(
+            Rc::new(VecModel::from(toolchains)) as Rc<dyn Model<Data = SharedString>>
+        ));
+    });
+
+    Ok(())
 }

@@ -38,7 +38,8 @@
        "SPDX",
        "sixtyfps",
        "Itertools",
-       "rustup"
+       "rustup",
+       "toolchains"
     ],
     "ignorePaths": [
         "cspell.json",

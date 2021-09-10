@@ -183,6 +183,8 @@ CargoUI := Window {
     property <bool> enable-default-features;
     callback package_selected(string);
 
+    property <[string]> toolchains;
+
     VerticalBox {
 
         TabWidget {
@@ -382,6 +384,20 @@ CargoUI := Window {
 
             Tab {
                 title: "Toolchains";
+
+                GroupBox {
+                    title: "Installed Toolchains";
+
+                    VerticalBox {
+                        // Needed to work around https://github.com/sixtyfpsui/sixtyfps/issues/487
+                        vertical-stretch: 1;
+                        alignment: start;
+
+                        for toolchain in toolchains: Text {
+                            text: toolchain;
+                        }
+                    }
+                }
             }
         }
     }
