@@ -1,5 +1,5 @@
 {
-    "version": "0.1",
+    "version": "0.2",
     "language": "en",
     "languageSettings": [
         {
@@ -36,7 +36,8 @@
     ],
     "words": [
        "SPDX",
-       "sixtyfps"
+       "sixtyfps",
+       "Itertools"
     ],
     "ignorePaths": [
         "cspell.json",
