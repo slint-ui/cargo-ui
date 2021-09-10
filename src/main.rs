@@ -30,7 +30,7 @@ struct FeatureSettings {
 }
 
 #[derive(Debug)]
-enum Message {
+enum CargoMessage {
     Quit,
     Action {
         action: Action,
@@ -43,39 +43,55 @@ enum Message {
 }
 
 fn main() {
-    let handle = CargoUI::new();
-    let (s, r) = tokio::sync::mpsc::unbounded_channel();
-    let handle_weak = handle.as_weak();
-    let worker_thread = std::thread::spawn(move || {
-        tokio::runtime::Runtime::new()
-            .unwrap()
-            .block_on(worker_loop(r, handle_weak))
-    });
-    handle.set_workspace_valid(false);
-    let send = s.clone();
+    let cargo_ui = CargoUI::new();
 
-    let handle_weak = handle.as_weak();
-    handle.on_action(move |action| {
-        send.send(Message::Action {
-            action,
-            feature_settings: FeatureSettings::new(&handle_weak.upgrade().unwrap()),
-        })
-        .unwrap()
+    let (cargo_channel, r) = tokio::sync::mpsc::unbounded_channel();
+    let cargo_worker_thread = std::thread::spawn({
+        let handle_weak = cargo_ui.as_weak();
+        move || {
+            tokio::runtime::Runtime::new()
+                .unwrap()
+                .block_on(cargo_worker_loop(r, handle_weak))
+        }
     });
-    let send = s.clone();
-    handle.on_cancel(move || send.send(Message::Cancel).unwrap());
-    let send = s.clone();
-    handle.on_show_open_dialog(move || send.send(Message::ShowOpenDialog).unwrap());
-    let send = s.clone();
-    handle.on_reload_manifest(move |m| send.send(Message::ReloadManifest(m)).unwrap());
-    let send = s.clone();
-    handle.on_package_selected(move |pkg| send.send(Message::PackageSelected(pkg)).unwrap());
-    handle.run();
-    let _ = s.send(Message::Quit);
-    worker_thread.join().unwrap();
+    cargo_ui.set_workspace_valid(false);
+
+    cargo_ui.on_action({
+        let cargo_channel = cargo_channel.clone();
+        let ui_handle = cargo_ui.as_weak();
+        move |action| {
+            cargo_channel
+                .send(CargoMessage::Action {
+                    action,
+                    feature_settings: FeatureSettings::new(&ui_handle.upgrade().unwrap()),
+                })
+                .unwrap()
+        }
+    });
+    cargo_ui.on_cancel({
+        let cargo_channel = cargo_channel.clone();
+        move || cargo_channel.send(CargoMessage::Cancel).unwrap()
+    });
+    cargo_ui.on_show_open_dialog({
+        let cargo_channel = cargo_channel.clone();
+        move || cargo_channel.send(CargoMessage::ShowOpenDialog).unwrap()
+    });
+    cargo_ui.on_reload_manifest({
+        let cargo_channel = cargo_channel.clone();
+        move |m| cargo_channel.send(CargoMessage::ReloadManifest(m)).unwrap()
+    });
+    cargo_ui.on_package_selected({
+        let cargo_channel = cargo_channel.clone();
+        move |pkg| cargo_channel.send(CargoMessage::PackageSelected(pkg)).unwrap()
+    });
+
+    cargo_ui.run();
+
+    let _ = cargo_channel.send(CargoMessage::Quit);
+    cargo_worker_thread.join().unwrap();
 }
 
-async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<CargoUI>) {
+async fn cargo_worker_loop(mut r: UnboundedReceiver<CargoMessage>, handle: sixtyfps::Weak<CargoUI>) {
     let mut manifest: Manifest = default_manifest().into();
     let metadata: RefCell<Option<Metadata>> = Default::default();
     let mut package = SharedString::default();
@@ -105,8 +121,8 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
 
         match m {
             None => return,
-            Some(Message::Quit) => return,
-            Some(Message::Action {
+            Some(CargoMessage::Quit) => return,
+            Some(CargoMessage::Action {
                 action,
                 feature_settings,
             }) => {
@@ -117,10 +133,10 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
                     handle.clone(),
                 )));
             }
-            Some(Message::Cancel) => {
+            Some(CargoMessage::Cancel) => {
                 run_cargo_future = None;
             }
-            Some(Message::ReloadManifest(m)) => {
+            Some(CargoMessage::ReloadManifest(m)) => {
                 manifest = PathBuf::from(m.as_str()).into();
                 update_features = true;
                 run_cargo_future = Some(Box::pin(read_metadata(
@@ -129,7 +145,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
                     &metadata,
                 )));
             }
-            Some(Message::ShowOpenDialog) => {
+            Some(CargoMessage::ShowOpenDialog) => {
                 manifest = show_open_dialog(manifest);
                 update_features = true;
                 run_cargo_future = Some(Box::pin(read_metadata(
@@ -138,7 +154,7 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
                     &metadata,
                 )));
             }
-            Some(Message::PackageSelected(pkg)) => {
+            Some(CargoMessage::PackageSelected(pkg)) => {
                 package = pkg;
                 if let Some(metadata) = &*metadata.borrow() {
                     apply_metadata(
