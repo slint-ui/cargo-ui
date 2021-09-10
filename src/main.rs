@@ -140,10 +140,8 @@ async fn worker_loop(mut r: UnboundedReceiver<Message>, handle: sixtyfps::Weak<C
             }
             Some(Message::PackageSelected(pkg)) => {
                 package = pkg;
-                update_features = true;
                 if let Some(metadata) = &*metadata.borrow() {
-                    apply_metadata(metadata, update_features, &mut package, handle.clone());
-                    update_features = false;
+                    apply_metadata(metadata, /*update features*/false, &mut package, handle.clone());
                 }
             }
         }
@@ -356,7 +354,7 @@ fn apply_metadata(
     let mut packages = vec![SharedString::default()]; // keep one empty row
     let mut run_target = Vec::new();
     let mut test_target = Vec::new();
-    let mut features = None;
+    let mut features: Option<Vec<Feature>> = None;
     if !package.is_empty()
         && !metadata
             .packages
@@ -374,6 +372,27 @@ fn apply_metadata(
         .filter(|p| metadata.workspace_members.contains(&p.id))
     {
         packages.push(p.name.as_str().into());
+
+        if update_features {
+            let default_features: HashSet<_> = p
+                .features
+                .get("default")
+                .map(|default_features| default_features.iter().cloned().collect())
+                .unwrap_or_default();
+
+            // Use get_or_insert_with_default() when https://github.com/rust-lang/rust/issues/82901 is stable
+            features.get_or_insert_with(|| Default::default()).extend(
+                p.features
+                    .keys()
+                    .filter(|name| *name != "default")
+                    .map(|name| Feature {
+                        name: [p.name.as_str(), name.as_str()].join("/").into(),
+                        enabled: false,
+                        enabled_by_default: default_features.contains(name),
+                    }),
+            );
+        }
+
         if !package.is_empty() && package != p.name.as_str() {
             continue;
         }
@@ -385,26 +404,6 @@ fn apply_metadata(
             } else if t.kind.iter().any(|x| x == "test") {
                 test_target.push(SharedString::from(t.name.as_str()));
             }
-        }
-
-        if update_features {
-            let default_features: HashSet<_> = p
-                .features
-                .get("default")
-                .map(|default_features| default_features.iter().cloned().collect())
-                .unwrap_or_default();
-
-            features = p
-                .features
-                .keys()
-                .filter(|name| *name != "default")
-                .map(|name| Feature {
-                    name: name.into(),
-                    enabled: false,
-                    enabled_by_default: default_features.contains(name),
-                })
-                .collect::<Vec<_>>()
-                .into();
         }
     }
     let pkg = package.clone();
