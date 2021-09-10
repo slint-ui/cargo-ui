@@ -77,10 +77,7 @@ async fn refresh_toolchains(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Resul
         let name: SharedString = line.into();
         toolchains.push({
             let default = name.contains("(default)");
-            Toolchain {
-                name,
-                default,
-            }
+            Toolchain { name, default }
         });
     }
 
