@@ -29,3 +29,7 @@ dialog = "0.3"
 [build-dependencies]
 sixtyfps-build = "0.1.2"
 
+# Needed to avoid panic when using tab widget: https://github.com/sixtyfpsui/sixtyfps/issues/412
+[patch.crates-io]
+sixtyfps = { git = "https://github.com/sixtyfpsui/sixtyfps", rev = "85a46c07b7703beec49ebdb36984bbb8894045a0" }
+sixtyfps-build = { git = "https://github.com/sixtyfpsui/sixtyfps", rev = "85a46c07b7703beec49ebdb36984bbb8894045a0" }
