@@ -155,6 +155,7 @@ export struct Feature := {
 }
 
 export CargoView := GridBox {
+    // Public properties
     property <string> status: "Cargo UI";
     property <[string]> packages;
     property <bool> allow-package-selection: false;
@@ -173,7 +174,6 @@ export CargoView := GridBox {
     callback reload-manifest(string);
     callback show-open-dialog;
     property <bool> build-pane-visible;
-    property <bool> deptree-pane-visible;
     property <[DependencyNode]> deptree;
     property <bool> has-features;
     property <[Feature]> package-features;
@@ -181,6 +181,9 @@ export CargoView := GridBox {
     callback package-selected(string);
 
     property <brush> background;
+
+    // Private properties
+    property <bool> deptree-pane-visible;
 
     Row {
         Text { text: "Manifest:"; vertical-alignment: center; horizontal-alignment: right; }

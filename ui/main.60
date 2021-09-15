@@ -37,7 +37,6 @@ CargoUI := Window {
     callback reload-manifest <=> cargo-view.reload-manifest;
     callback show-open-dialog <=> cargo-view.show-open-dialog;
     property build-pane-visible <=> cargo-view.build-pane-visible;
-    property deptree-pane-visible <=> cargo-view.deptree-pane-visible;
     property deptree <=> cargo-view.deptree;
     property has-features <=> cargo-view.has-features;
     property package-features <=> cargo-view.package-features;
