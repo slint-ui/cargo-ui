@@ -45,6 +45,7 @@ CargoUI := Window {
 
     // Rustup aliases
     property toolchains <=> rustup-view.toolchains;
+    property toolchains-available <=> rustup-view.toolchains-available;
 
     VerticalBox {
 

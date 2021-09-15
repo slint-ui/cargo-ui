@@ -13,14 +13,21 @@ export struct Toolchain := {
 export RustupView := GroupBox {
     title: "Installed Toolchains";
 
-    property <[Toolchain]> toolchains;
+    property<[Toolchain]> toolchains;
+    property<bool> toolchains-available: false;
 
-    VerticalBox {
-        alignment: start;
+    VerticalBox { 
+        if toolchains-available: VerticalLayout {
+            alignment: start;
 
-        for toolchain in toolchains: Text {
-            text: toolchain.name;
-            font-weight: toolchain.default ? 800 : 400;
+            for toolchain in toolchains: Text {
+                text: toolchain.name;
+                font-weight: toolchain.default ? 800 : 400;
+            }
+        }
+        if !toolchains-available: Text {
+            text: "Refreshing toolchains - please wait";
+            vertical-alignment: center;
         }
     }
 }

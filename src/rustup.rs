@@ -11,7 +11,6 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 #[derive(Debug)]
 pub enum RustupMessage {
-    RefreshToolChains,
     Quit,
 }
 
@@ -31,7 +30,6 @@ impl RustupWorker {
                     .block_on(rustup_worker_loop(r, handle_weak))
             }
         });
-        let _ = channel.send(RustupMessage::RefreshToolChains);
         Self {
             channel,
             worker_thread,
@@ -48,20 +46,26 @@ async fn rustup_worker_loop(
     mut r: UnboundedReceiver<RustupMessage>,
     handle: sixtyfps::Weak<CargoUI>,
 ) {
+    let refresh_handle = tokio::task::spawn(refresh_toolchains(handle.clone()));
+
     loop {
         let m = r.recv().await;
 
         match m {
             None => return,
-            Some(RustupMessage::RefreshToolChains) => {
-                refresh_toolchains(handle.clone()).await.unwrap();
-            }
-            Some(RustupMessage::Quit) => return,
+            Some(RustupMessage::Quit) => {
+                refresh_handle.abort();
+                return
+            },
         }
     }
 }
 
-async fn refresh_toolchains(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Result<()> {
+async fn refresh_toolchains(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Result<()> {   
+    handle.clone().upgrade_in_event_loop(|ui| {
+        ui.set_toolchains_available(false);
+    });
+
     let mut rustup_command = tokio::process::Command::new("rustup");
     rustup_command.arg("toolchain").arg("list");
     let mut spawn_result = rustup_command
@@ -85,6 +89,7 @@ async fn refresh_toolchains(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Resul
         ui.set_toolchains(ModelHandle::from(
             Rc::new(VecModel::from(toolchains)) as Rc<dyn Model<Data = Toolchain>>
         ));
+        ui.set_toolchains_available(true);
     });
 
     Ok(())
