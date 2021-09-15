@@ -254,8 +254,6 @@ export CargoView := GridBox {
             GroupBox {
                 title: "Features";
                 VerticalBox {
-                    // Needed to work around https://github.com/sixtyfpsui/sixtyfps/issues/487
-                    vertical-stretch: 1;
                     CheckBox {
                         text: "Enable Default Features";
                         checked <=> root.enable-default-features;
