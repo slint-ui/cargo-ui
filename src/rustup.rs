@@ -55,13 +55,13 @@ async fn rustup_worker_loop(
             None => return,
             Some(RustupMessage::Quit) => {
                 refresh_handle.abort();
-                return
-            },
+                return;
+            }
         }
     }
 }
 
-async fn refresh_toolchains(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Result<()> {   
+async fn refresh_toolchains(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Result<()> {
     handle.clone().upgrade_in_event_loop(|ui| {
         ui.set_toolchains_available(false);
     });
