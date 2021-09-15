@@ -53,7 +53,6 @@ CargoUI := Window {
                 title: "Project / Workspace";
 
                 cargo-view := CargoView {
-                    background: root.background;
                 }
             }
 
