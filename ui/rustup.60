@@ -1,0 +1,28 @@
+/* Copyright © 2021 SixtyFPS GmbH <info@sixtyfps.info>
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
+ import { GroupBox, VerticalBox } from "sixtyfps_widgets.60";
+
+
+export struct Toolchain := {
+    name: string,
+    default: bool
+}
+
+export RustupView := GroupBox {
+    title: "Installed Toolchains";
+
+    property <[Toolchain]> toolchains;
+
+    VerticalBox {
+        // Needed to work around https://github.com/sixtyfpsui/sixtyfps/issues/487
+        vertical-stretch: 1;
+        alignment: start;
+
+        for toolchain in toolchains: Text {
+            text: toolchain.name;
+            font-weight: toolchain.default ? 800 : 400;
+        }
+    }
+}
