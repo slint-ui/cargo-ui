@@ -162,12 +162,9 @@ async fn run_cargo(
     struct ResetIsBuilding(sixtyfps::Weak<CargoUI>);
     impl Drop for ResetIsBuilding {
         fn drop(&mut self) {
-            let h = self.0.clone();
-            sixtyfps::invoke_from_event_loop(move || {
-                if let Some(h) = h.upgrade() {
-                    h.set_is_building(false)
-                }
-            })
+            self.0
+                .clone()
+                .upgrade_in_event_loop(move |h| h.set_is_building(false))
         }
     }
     let _reset_is_building = ResetIsBuilding(handle.clone());
@@ -194,8 +191,22 @@ async fn run_cargo(
         cargo_command.arg("-p").arg(action.package.as_str());
     }
     features.to_args(&mut cargo_command);
+    cargo_command.args(&["--message-format", "json"]);
+
+    if !action.arguments.is_empty() {
+        cargo_command.arg("--");
+        if let Some(args) = shlex::split(&action.arguments) {
+            cargo_command.args(args);
+        } else {
+            handle.clone().upgrade_in_event_loop(move |h| {
+                h.set_status("Error parsing command line arguments".into());
+                h.set_build_pane_visible(false);
+            });
+            return Ok(());
+        }
+    }
+
     let mut res = cargo_command
-        .args(&["--message-format", "json"])
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .kill_on_drop(true)
@@ -207,11 +218,8 @@ async fn run_cargo(
         tokio::select! {
             line = stderr.next_line() => {
                 let line = if let Some(line) = line? { line } else { break };
-                let h = handle.clone();
-                sixtyfps::invoke_from_event_loop(move || {
-                    if let Some(h) = h.upgrade() {
-                        h.set_status(line.into());
-                    }
+                handle.clone().upgrade_in_event_loop(move |h| {
+                    h.set_status(line.into());
                 });
             }
             line = stdout.next_line() => {
@@ -330,7 +338,12 @@ async fn read_metadata(
     let mut cmd = cargo_metadata::MetadataCommand::new();
     cmd.manifest_path(manifest.path_to_cargo_toml());
     *output.borrow_mut() = match cmd.exec() {
-        Ok(metadata) => Some(metadata),
+        Ok(metadata) => {
+            handle.upgrade_in_event_loop(move |h| {
+                h.set_status("Cargo.toml loaded".into());
+            });
+            Some(metadata)
+        }
         Err(e) => {
             handle.upgrade_in_event_loop(move |h| {
                 h.set_status(format!("{}", e).into());
@@ -425,7 +438,6 @@ fn apply_metadata(
                 Rc::new(VecModel::from(features)) as Rc<dyn Model<Data = Feature>>
             ));
         }
-        h.set_status("Cargo.toml loaded".into());
         h.set_workspace_valid(true);
     });
 

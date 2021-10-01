@@ -20,6 +20,7 @@ export struct Action := {
     package: string,
     profile: string,
     extra: string, // bin or test name
+    arguments: string,
 }
 
 Pane := Rectangle {
@@ -228,7 +229,6 @@ export CargoView := GridBox {
         Rectangle { height: 40px; }
     }
 
-
     Row {
         Button {
             text: "🚀 Run";
@@ -239,12 +239,20 @@ export CargoView := GridBox {
                     command: "run",
                     package: current-package,
                     profile: mode_cb.current_value,
-                    extra: bin_cb.current_value
+                    extra: bin_cb.current_value,
+                    arguments: arguments-le.text,
                 });
             }
         }
         bin_cb := ComboBox {
             model: extra-run;
+            enabled: root.workspace-valid;
+        }
+    }
+    Row {
+        arguments-le := LineEdit {
+            colspan: 2;
+            placeholder-text: "Command line arguments";
             enabled: root.workspace-valid;
         }
     }
