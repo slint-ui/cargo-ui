@@ -134,7 +134,7 @@ async fn cargo_worker_loop(
                 if let Some(metadata) = &*metadata.borrow() {
                     apply_metadata(
                         metadata,
-                        /*update features*/ false,
+                        /*update_features*/ true,
                         &mut package,
                         handle.clone(),
                     );
@@ -356,7 +356,7 @@ async fn read_metadata(
 
 fn apply_metadata(
     metadata: &Metadata,
-    update_features: bool,
+    mut update_features: bool,
     package: &mut SharedString,
     handle: sixtyfps::Weak<CargoUI>,
 ) {
@@ -373,6 +373,7 @@ fn apply_metadata(
     {
         // if the selected package don't exist in the manifest, deselect it
         *package = SharedString::default();
+        update_features = true;
     };
 
     for p in metadata
@@ -389,17 +390,23 @@ fn apply_metadata(
                 .map(|default_features| default_features.iter().cloned().collect())
                 .unwrap_or_default();
 
-            // Use get_or_insert_with_default() when https://github.com/rust-lang/rust/issues/82901 is stable
-            features.get_or_insert_with(|| Default::default()).extend(
-                p.features
-                    .keys()
-                    .filter(|name| *name != "default")
-                    .map(|name| Feature {
-                        name: [p.name.as_str(), name.as_str()].join("/").into(),
-                        enabled: false,
-                        enabled_by_default: default_features.contains(name),
-                    }),
-            );
+            if package.is_empty() || package == p.name.as_str() {
+                // Use get_or_insert_with_default() when https://github.com/rust-lang/rust/issues/82901 is stable
+                features.get_or_insert_with(|| Default::default()).extend(
+                    p.features
+                        .keys()
+                        .filter(|name| *name != "default")
+                        .map(|name| Feature {
+                            name: if package.is_empty() {
+                                [p.name.as_str(), name.as_str()].join("/").into()
+                            } else {
+                                name.into()
+                            },
+                            enabled: false,
+                            enabled_by_default: default_features.contains(name),
+                        }),
+                );
+            }
         }
 
         if !package.is_empty() && package != p.name.as_str() {
