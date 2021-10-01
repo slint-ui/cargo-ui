@@ -247,36 +247,6 @@ export CargoView := GridBox {
             model: extra-run;
             enabled: root.workspace-valid;
         }
-
-        VerticalLayout {
-            rowspan: 6;
-            colspan: 2;
-            GroupBox {
-                title: "Features";
-                VerticalBox {
-                    CheckBox {
-                        text: "Enable Default Features";
-                        checked <=> root.enable-default-features;
-                        enabled: true;
-                    }
-                    if has-features: ListView {
-                        for feature in package-features:  HorizontalLayout {
-                            CheckBox {
-                                text: feature.name + (!enabled ? " (enabled by default)" : "");
-                                checked: feature.enabled;
-                                enabled: !feature.enabled_by_default || !root.enable-default-features;
-                                toggled => {
-                                    feature.enabled = checked;
-                                }
-                            }
-                        }
-                    }
-                    if !has-features: Rectangle {
-                        // helper rectangle to ensure that the CheckBox is aligned to the top.
-                    }
-                }
-            }
-        }
     }
 
     Row {
@@ -355,6 +325,37 @@ export CargoView := GridBox {
         wrap: word_wrap;
         overflow: elide;
     }
+
+    GroupBox {
+        row: 3;
+        col: 2;
+        rowspan: 6;
+        colspan: 2;
+        title: "Features";
+        VerticalBox {
+            CheckBox {
+                text: "Enable Default Features";
+                checked <=> root.enable-default-features;
+                enabled: true;
+            }
+            if has-features: ListView {
+                for feature in package-features:  HorizontalLayout {
+                    CheckBox {
+                        text: feature.name + (!enabled ? " (enabled by default)" : "");
+                        checked: feature.enabled;
+                        enabled: !feature.enabled_by_default || !root.enable-default-features;
+                        toggled => {
+                            feature.enabled = checked;
+                        }
+                    }
+                }
+            }
+            if !has-features: Rectangle {
+                // helper rectangle to ensure that the CheckBox is aligned to the top.
+            }
+        }
+    }
+
 
     deptree := Rectangle {
         row: 2;
