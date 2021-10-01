@@ -337,7 +337,7 @@ export CargoView := GridBox {
     GroupBox {
         row: 3;
         col: 2;
-        rowspan: 6;
+        rowspan: 7;
         colspan: 2;
         title: "Features";
         VerticalBox {
@@ -368,7 +368,7 @@ export CargoView := GridBox {
     deptree := Rectangle {
         row: 2;
         colspan: 4;
-        rowspan: 7;
+        rowspan: 8;
         property <float> animate_opacity: deptree-pane-visible ? 1 : 0;
         animate animate_opacity { duration: 250ms; easing: ease; }
 
