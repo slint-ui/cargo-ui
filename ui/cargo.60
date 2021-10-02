@@ -109,10 +109,11 @@ DepTreePane := Pane {
     VerticalBox {
         ListView {
             for dep in model : HorizontalLayout {
-                Rectangle { width: dep.indentation * 15px; }
+                Rectangle { width: dep.indentation * 20px; }
                 Text {
-                    text: !dep.has_children ? "" : dep.open ? "[-]" : "[+]";
-                    width: 30px;
+                    text: !dep.has_children ? "" : dep.open ? "⊟ " : "⊞ ";
+                    horizontal-alignment: right;
+                    width: 20px;
                     TouchArea {
                         clicked => { dep.open = !dep.open; }
                     }
