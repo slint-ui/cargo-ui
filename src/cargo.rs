@@ -456,7 +456,15 @@ fn apply_metadata(
             if !package.is_empty() && package != metadata[m].name.as_str() {
                 continue;
             }
-            build_dep_tree(m, &mut depgraph_tree, &mut duplicates, &metadata, &map, 0);
+            build_dep_tree(
+                m,
+                None,
+                &mut depgraph_tree,
+                &mut duplicates,
+                &metadata,
+                &map,
+                0,
+            );
         }
     }
 
@@ -510,6 +518,7 @@ struct TreeNode {
 
 fn build_dep_tree(
     package_id: &PackageId,
+    node_dep: Option<&cargo_metadata::NodeDep>,
     depgraph_tree: &mut Vec<TreeNode>,
     duplicates: &mut HashSet<PackageId>,
     metadata: &Metadata,
@@ -517,16 +526,31 @@ fn build_dep_tree(
     indentation: i32,
 ) {
     let package = &metadata[package_id];
-    let mut text = package.name.as_str().into();
+    let mut text = format!("{} {}", package.name, package.version).into();
     if duplicates.contains(package_id) {
         text += " (duplicated)";
     }
+    let dep_kind = node_dep
+        .filter(|n| {
+            !n.dep_kinds
+                .iter()
+                .all(|c| c.kind == cargo_metadata::DependencyKind::Normal)
+        })
+        .map(|n| {
+            n.dep_kinds
+                .iter()
+                .map(|c| c.kind.to_string())
+                .join(" ")
+                .into()
+        })
+        .unwrap_or_default();
     let mut node = TreeNode {
         node: DependencyNode {
             has_children: false,
             indentation,
             open: true,
             text,
+            dep_kind,
         }
         .into(),
         children: Default::default(),
@@ -535,9 +559,10 @@ fn build_dep_tree(
     if !duplicates.contains(package_id) {
         duplicates.insert(package_id.clone());
 
-        for d in &map[package_id].dependencies {
+        for d in &map[package_id].deps {
             build_dep_tree(
-                d,
+                &d.pkg,
+                Some(&d),
                 &mut node.children,
                 duplicates,
                 metadata,

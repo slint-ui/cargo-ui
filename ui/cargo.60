@@ -96,6 +96,7 @@ export BuildingPane := Pane {
 
 export struct DependencyNode := {
     text: string,
+    dep_kind: string,
     indentation: int,
     has_children: bool,
     open: bool,
@@ -109,9 +110,11 @@ DepTreePane := Pane {
     VerticalBox {
         ListView {
             for dep in model : HorizontalLayout {
+                alignment: start;
+                spacing: 5px;
                 Rectangle { width: dep.indentation * 20px; }
                 Text {
-                    text: !dep.has_children ? "" : dep.open ? "⊟ " : "⊞ ";
+                    text: !dep.has_children ? "" : dep.open ? "⊟" : "⊞";
                     horizontal-alignment: right;
                     width: 20px;
                     TouchArea {
@@ -119,6 +122,10 @@ DepTreePane := Pane {
                     }
                 }
                 Text { text: dep.text; }
+                if (dep.dep_kind != "") : Text {
+                    text: " (\{dep.dep_kind})";
+                    color: gray;
+                }
             }
         }
         HorizontalBox {
@@ -329,7 +336,7 @@ export CargoView := GridBox {
     }
 
     Text {
-        colspan: 3;
+        colspan: 4;
         text: status;
         wrap: word_wrap;
         overflow: elide;
