@@ -548,7 +548,7 @@ fn build_dep_tree(
         node: DependencyNode {
             has_children: false,
             indentation,
-            open: true,
+            open: indentation != 1,
             text,
             dep_kind,
         }
