@@ -35,7 +35,7 @@ macOS:
 
 ## Style
 
-The default style from SixtyFPS is the `ugly` style. But the interface looks much
+The default style from SixtyFPS is the `fluent` style. But the interface looks much
 nicer using the `native` style as this has native controls and images.
 
 To install using the native style, use
