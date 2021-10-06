@@ -16,6 +16,7 @@ import { Toolchain, RustupView } from "rustup.60";
 
 CargoUI := Window {
     title: "Cargo UI";
+    icon: @image-url("rust-logo.png");
     preferred_height: 500px;
     preferred_width: 300px;
 

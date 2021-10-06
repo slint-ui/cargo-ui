@@ -33,5 +33,5 @@ sixtyfps-build = "0.1.2"
 
 # Needed to avoid panic when using tab widget: https://github.com/sixtyfpsui/sixtyfps/issues/412
 [patch.crates-io]
-sixtyfps = { git = "https://github.com/sixtyfpsui/sixtyfps", rev = "d5ad9ebe0e849c71c663c7fc2d33ef9c2cd9d51f" }
-sixtyfps-build = { git = "https://github.com/sixtyfpsui/sixtyfps", rev = "d5ad9ebe0e849c71c663c7fc2d33ef9c2cd9d51f" }
+sixtyfps = { git = "https://github.com/sixtyfpsui/sixtyfps" }
+sixtyfps-build = { git = "https://github.com/sixtyfpsui/sixtyfps" }
