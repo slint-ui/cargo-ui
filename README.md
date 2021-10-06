@@ -29,8 +29,6 @@ Windows:
 
 macOS:
  *  "Xcode Command Line Tools" need to be installed: `xcode-select --install`
- * [CMake](https://cmake.org/download/) installed and in your `PATH`. In the CMake
-   GUI application instructions can be found via `Tools->How to Install For Command Line Use`.
 
 
 ## Style
