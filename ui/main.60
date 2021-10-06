@@ -4,7 +4,8 @@
 
 import {
     ComboBox, VerticalBox, HorizontalBox, GridBox, Button,
-    LineEdit, ListView, GroupBox, CheckBox, TabWidget
+    LineEdit, ListView, GroupBox, CheckBox, TabWidget,
+    AboutSixtyFPS
 } from "sixtyfps_widgets.60";
 
 import {
@@ -17,6 +18,9 @@ CargoUI := Window {
     title: "Cargo UI";
     preferred_height: 500px;
     preferred_width: 300px;
+
+    property <string> cargo-ui-version: "x.y.z";
+    callback open-url(string);
 
     // Cargo aliases
     property status <=> cargo-view.status;
@@ -63,6 +67,33 @@ CargoUI := Window {
 
                 rustup-view := RustupView {
 
+                }
+            }
+
+            Tab {
+                title: "About";
+                VerticalBox {
+                    Text {
+                        text: "Cargo UI \{cargo-ui-version}";
+                        font-size: 40px;
+                    }
+                    Text {
+                        text: "https://github.com/sixtyfpsui/cargo-ui";
+                        color: blue;
+                        TouchArea { clicked => { open-url(parent.text); } }
+                    }
+                    Text {
+                        text: "License: GNU General Public License Version 3";
+                        TouchArea { clicked => { open-url("https://github.com/sixtyfpsui/cargo-ui/blob/master/LICENSE-GPL"); } }
+                    }
+
+                    Rectangle {}
+
+                    HorizontalBox {
+                        alignment: end;
+                        vertical-stretch: 0;
+                        AboutSixtyFPS { TouchArea { clicked => { open-url("https://sixtyfps.io"); } } }
+                    }
                 }
             }
         }

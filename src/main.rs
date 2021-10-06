@@ -20,6 +20,11 @@ fn main() {
     let cargo_worker = CargoWorker::new(&cargo_ui);
     let rustup_worker = RustupWorker::new(&cargo_ui);
 
+    cargo_ui.on_open_url(|url| {
+        open::that_in_background(url.as_str());
+    });
+    cargo_ui.set_cargo_ui_version(env!("CARGO_PKG_VERSION").into());
+
     cargo_ui.set_workspace_valid(false);
 
     cargo_ui.on_action({
