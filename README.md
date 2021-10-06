@@ -25,7 +25,6 @@ Linux:
 Windows:
 
  * A working C compiler (such as MSVC)
- * [CMake](https://cmake.org/download/) installed in your `PATH`
 
 macOS:
  *  "Xcode Command Line Tools" need to be installed: `xcode-select --install`
