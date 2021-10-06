@@ -12,7 +12,7 @@ repository = "https://github.com/sixtyfpsui/cargo-ui"
 resolver = "2"
 
 [dependencies]
-sixtyfps = "0.1.2"
+sixtyfps = "0.1.3"
 tokio = { version = "1", features= ["full"] }
 cargo_metadata = "0.14"
 serde_json = "1"
@@ -32,5 +32,5 @@ sixtyfps-build = "0.1.2"
 
 # Needed to avoid panic when using tab widget: https://github.com/sixtyfpsui/sixtyfps/issues/412
 [patch.crates-io]
-sixtyfps = { git = "https://github.com/sixtyfpsui/sixtyfps", rev = "28fd5a3fc10b192c65a901f77ba41855bc3b639b" }
-sixtyfps-build = { git = "https://github.com/sixtyfpsui/sixtyfps", rev = "28fd5a3fc10b192c65a901f77ba41855bc3b639b" }
+sixtyfps = { git = "https://github.com/sixtyfpsui/sixtyfps", rev = "d5ad9ebe0e849c71c663c7fc2d33ef9c2cd9d51f" }
+sixtyfps-build = { git = "https://github.com/sixtyfpsui/sixtyfps", rev = "d5ad9ebe0e849c71c663c7fc2d33ef9c2cd9d51f" }
