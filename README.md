@@ -53,7 +53,7 @@ Some ideas for features:
  - [x] Select the debug or release mode
  - [ ] Select the toolchain (nightly, stable, ...)
  - [ ] Maybe integrate with rustup to update the toolchain or install new one
- - [ ] See the dependencies as an expendable tree
+ - [x] See the dependencies as an expendable tree
  - [ ] Show duplicated dependencies
  - [ ] Show outdated dependencies, with button to easily update
  - [ ] Ability to easily add dependency (by searching the crates.io index)
