@@ -30,19 +30,9 @@ macOS:
  *  "Xcode Command Line Tools" need to be installed: `xcode-select --install`
 
 
-## Style
-
-The default style from SixtyFPS is the `fluent` style. But the interface looks much
-nicer using the `native` style as this has native controls and images.
-
-To install using the native style, use
-
-```sh
-SIXTYFPS_STYLE=native cargo install cargo-ui
-```
-
-The use of the native style requires Qt 5.15, see https://github.com/sixtyfpsui/sixtyfps/blob/master/docs/install_qt.md
-
+**For the native style**:  (optional)
+ * The native style requires Qt >= 5.15, see <https://github.com/sixtyfpsui/sixtyfps/blob/master/docs/install_qt.md>.
+   If Qt is not present while building, the *fluent* style will be used as a fallback.
 
 ## Vision
 
