@@ -68,12 +68,12 @@ async fn cargo_worker_loop(
     handle: sixtyfps::Weak<CargoUI>,
 ) -> tokio::io::Result<()> {
     let mut manifest: Manifest = default_manifest().into();
-    let metadata: RefCell<Option<Metadata>> = Default::default();
+    let mut metadata: Option<Metadata> = None;
     let mut package = SharedString::default();
     let mut update_features = true;
 
     let run_cargo_future = Fuse::terminated();
-    let read_metadata_future = read_metadata(manifest.clone(), handle.clone(), &metadata).fuse();
+    let read_metadata_future = read_metadata(manifest.clone(), handle.clone()).fuse();
     futures::pin_mut!(run_cargo_future, read_metadata_future);
     loop {
         let m = futures::select! {
@@ -82,8 +82,8 @@ async fn cargo_worker_loop(
                 continue;
             }
             res = read_metadata_future => {
-                res?;
-                if let Some(metadata) = &*metadata.borrow() {
+                metadata = res;
+                if let Some(metadata) = &metadata {
                     apply_metadata(metadata, update_features, &mut package, handle.clone());
                     update_features = false;
                 }
@@ -108,18 +108,16 @@ async fn cargo_worker_loop(
             Some(CargoMessage::ReloadManifest(m)) => {
                 manifest = PathBuf::from(m.as_str()).into();
                 update_features = true;
-                read_metadata_future
-                    .set(read_metadata(manifest.clone(), handle.clone(), &metadata).fuse());
+                read_metadata_future.set(read_metadata(manifest.clone(), handle.clone()).fuse());
             }
             Some(CargoMessage::ShowOpenDialog) => {
                 manifest = show_open_dialog(manifest);
                 update_features = true;
-                read_metadata_future
-                    .set(read_metadata(manifest.clone(), handle.clone(), &metadata).fuse());
+                read_metadata_future.set(read_metadata(manifest.clone(), handle.clone()).fuse());
             }
             Some(CargoMessage::PackageSelected(pkg)) => {
                 package = pkg;
-                if let Some(metadata) = &*metadata.borrow() {
+                if let Some(metadata) = &metadata {
                     apply_metadata(
                         metadata,
                         /*update_features*/ true,
@@ -307,11 +305,7 @@ fn default_manifest() -> PathBuf {
     .unwrap_or_default()
 }
 
-async fn read_metadata(
-    manifest: Manifest,
-    handle: sixtyfps::Weak<CargoUI>,
-    output: &RefCell<Option<Metadata>>,
-) -> tokio::io::Result<()> {
+async fn read_metadata(manifest: Manifest, handle: sixtyfps::Weak<CargoUI>) -> Option<Metadata> {
     let manifest_str = manifest
         .path_to_cargo_toml()
         .to_string_lossy()
@@ -325,7 +319,7 @@ async fn read_metadata(
 
     let mut cmd = cargo_metadata::MetadataCommand::new();
     cmd.manifest_path(manifest.path_to_cargo_toml());
-    *output.borrow_mut() = match cmd.exec() {
+    match cmd.exec() {
         Ok(metadata) => {
             handle.upgrade_in_event_loop(move |h| {
                 h.set_status("Cargo.toml loaded".into());
@@ -338,8 +332,7 @@ async fn read_metadata(
             });
             None
         }
-    };
-    Ok(())
+    }
 }
 
 fn apply_metadata(
