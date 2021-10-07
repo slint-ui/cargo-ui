@@ -13,8 +13,8 @@ import {
 } from "cargo.60";
 
 import { Toolchain, RustupView } from "rustup.60";
-
-export {DependencyData, DependencyNode }
+import { CargoInstallView, InstalledCrate, CargoInstallData } from "cargo_install.60";
+export {DependencyData, DependencyNode, CargoInstallData }
 
 CargoUI := Window {
     title: "Cargo UI";
@@ -54,25 +54,28 @@ CargoUI := Window {
     property toolchains-available <=> rustup-view.toolchains-available;
 
     // Workaround: remove in SixtyFPS 0.1.4
-    property <DependencyNode> workaround;
+    property <{a: DependencyNode, b: InstalledCrate}> workaround;
 
     VerticalBox {
-
         TabWidget {
+            current-index: 1;
             Tab {
                 title: "Project / Workspace";
-
                 cargo-view := CargoView {
                     background: root.background;
                 }
             }
 
             Tab {
-                title: "Toolchains";
-
-                rustup-view := RustupView {
-
+                title: "Install";
+                CargoInstallView {
+                    action(action) => { root.action(action); }
                 }
+            }
+
+            Tab {
+                title: "Toolchains";
+                rustup-view := RustupView { }
             }
 
             Tab {

@@ -1,0 +1,57 @@
+/* Copyright © 2021 SixtyFPS GmbH <info@sixtyfps.info>
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
+import {
+    ComboBox, VerticalBox, HorizontalBox, GridBox, Button,
+    LineEdit, ListView, GroupBox, CheckBox
+} from "sixtyfps_widgets.60";
+
+import { Action } from "cargo.60";
+
+export struct InstalledCrate := {
+    name: string, version: string
+}
+
+export global CargoInstallData := {
+    callback update_all();
+    callback update(string);
+    callback uninstall(string);
+    property<[InstalledCrate]> crates: [{
+        name: "dummy", version: "v0.0.0",
+    }];
+}
+
+export CargoInstallView := GridBox {
+    callback update_all();
+    callback action(Action);
+    Row {
+        Text {
+            text: "Currently installed packages";
+            horizontal-stretch: 1;
+            vertical-alignment: center;
+        }
+        Button {
+            text: "🔄 Update all";
+            clicked => { update_all() }
+        }
+    }
+    ListView {
+        colspan: 2;
+        for crate in CargoInstallData.crates: HorizontalBox {
+            Text {
+                text: "\{crate.name} \{crate.version}";
+                horizontal-stretch: 1;
+                vertical-alignment: center;
+            }
+            Button {
+                text: "🔄 Update";
+                clicked => { action({ command: "install", extra: crate.name }) }
+            }
+            Button {
+                text: "🗑️ Uninstall";
+                clicked => { action({ command: "uninstall", extra: crate.name }) }
+            }
+        }
+    }
+}

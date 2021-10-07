@@ -13,12 +13,15 @@ mod cargo;
 use cargo::*;
 mod rustup;
 use rustup::*;
+mod cargo_install;
+use cargo_install::*;
 
 fn main() {
     let cargo_ui = CargoUI::new();
 
     let cargo_worker = CargoWorker::new(&cargo_ui);
     let rustup_worker = RustupWorker::new(&cargo_ui);
+    let cargo_install_worker = CargoInstallWorker::new(&cargo_ui);
 
     cargo_ui.on_open_url(|url| {
         open::that_in_background(url.as_str());
@@ -80,5 +83,6 @@ fn main() {
     cargo_ui.run();
 
     cargo_worker.join().unwrap();
+    cargo_install_worker.join().unwrap();
     rustup_worker.join().unwrap();
 }
