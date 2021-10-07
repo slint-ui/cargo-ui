@@ -4,14 +4,13 @@
 
 use super::{Action, CargoUI, DependencyNode, Diag, Feature};
 use cargo_metadata::{diagnostic::DiagnosticLevel, Metadata, Node, PackageId};
+use futures::future::{Fuse, FutureExt};
 use itertools::Itertools;
 use serde::Deserialize;
 use sixtyfps::{ComponentHandle, Model, ModelHandle, SharedString, VecModel};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::future::Future;
 use std::path::{Path, PathBuf};
-use std::pin::Pin;
 use std::rc::Rc;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -49,6 +48,7 @@ impl CargoWorker {
                 tokio::runtime::Runtime::new()
                     .unwrap()
                     .block_on(cargo_worker_loop(r, handle_weak))
+                    .unwrap()
             }
         });
         Self {
@@ -66,68 +66,56 @@ impl CargoWorker {
 async fn cargo_worker_loop(
     mut r: UnboundedReceiver<CargoMessage>,
     handle: sixtyfps::Weak<CargoUI>,
-) {
+) -> tokio::io::Result<()> {
     let mut manifest: Manifest = default_manifest().into();
     let metadata: RefCell<Option<Metadata>> = Default::default();
     let mut package = SharedString::default();
     let mut update_features = true;
-    let mut run_cargo_future: Option<Pin<Box<dyn Future<Output = tokio::io::Result<()>>>>> = Some(
-        Box::pin(read_metadata(manifest.clone(), handle.clone(), &metadata)),
-    );
+
+    let run_cargo_future = Fuse::terminated();
+    let read_metadata_future = read_metadata(manifest.clone(), handle.clone(), &metadata).fuse();
+    futures::pin_mut!(run_cargo_future, read_metadata_future);
     loop {
-        let m = if let Some(fut) = &mut run_cargo_future {
-            tokio::select! {
-                m = r.recv() => {
-                    m
-                }
-                res = fut => {
-                    res.unwrap();
-                    run_cargo_future = None;
-                    if let Some(metadata) = &*metadata.borrow() {
-                        apply_metadata(metadata, update_features, &mut package, handle.clone());
-                        update_features = false;
-                    }
-                    r.recv().await
-                }
+        let m = futures::select! {
+            res = run_cargo_future => {
+                res?;
+                continue;
             }
-        } else {
-            r.recv().await
+            res = read_metadata_future => {
+                res?;
+                if let Some(metadata) = &*metadata.borrow() {
+                    apply_metadata(metadata, update_features, &mut package, handle.clone());
+                    update_features = false;
+                }
+                continue;
+            }
+            m = r.recv().fuse() => {
+                m
+            }
         };
 
         match m {
-            None => return,
-            Some(CargoMessage::Quit) => return,
+            None => return Ok(()),
+            Some(CargoMessage::Quit) => return Ok(()),
             Some(CargoMessage::Action {
                 action,
                 feature_settings,
-            }) => {
-                run_cargo_future = Some(Box::pin(run_cargo(
-                    action,
-                    feature_settings,
-                    manifest.clone(),
-                    handle.clone(),
-                )));
-            }
+            }) => run_cargo_future
+                .set(run_cargo(action, feature_settings, manifest.clone(), handle.clone()).fuse()),
             Some(CargoMessage::Cancel) => {
-                run_cargo_future = None;
+                run_cargo_future.set(Fuse::terminated());
             }
             Some(CargoMessage::ReloadManifest(m)) => {
                 manifest = PathBuf::from(m.as_str()).into();
                 update_features = true;
-                run_cargo_future = Some(Box::pin(read_metadata(
-                    manifest.clone(),
-                    handle.clone(),
-                    &metadata,
-                )));
+                read_metadata_future
+                    .set(read_metadata(manifest.clone(), handle.clone(), &metadata).fuse());
             }
             Some(CargoMessage::ShowOpenDialog) => {
                 manifest = show_open_dialog(manifest);
                 update_features = true;
-                run_cargo_future = Some(Box::pin(read_metadata(
-                    manifest.clone(),
-                    handle.clone(),
-                    &metadata,
-                )));
+                read_metadata_future
+                    .set(read_metadata(manifest.clone(), handle.clone(), &metadata).fuse());
             }
             Some(CargoMessage::PackageSelected(pkg)) => {
                 package = pkg;
