@@ -3,6 +3,7 @@
  */
 
 use super::{Action, CargoUI, DependencyNode, Diag, Feature};
+use cargo_metadata::Version;
 use cargo_metadata::{diagnostic::DiagnosticLevel, Metadata, Node, PackageId};
 use futures::future::{Fuse, FutureExt};
 use itertools::Itertools;
@@ -12,6 +13,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::str::FromStr;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
@@ -69,12 +71,18 @@ async fn cargo_worker_loop(
 ) -> tokio::io::Result<()> {
     let mut manifest: Manifest = default_manifest().into();
     let mut metadata: Option<Metadata> = None;
+    let mut crates_index: Option<crates_index::Index> = None;
     let mut package = SharedString::default();
     let mut update_features = true;
 
     let run_cargo_future = Fuse::terminated();
     let read_metadata_future = read_metadata(manifest.clone(), handle.clone()).fuse();
-    futures::pin_mut!(run_cargo_future, read_metadata_future);
+    let load_crate_index_future = load_crate_index().fuse();
+    futures::pin_mut!(
+        run_cargo_future,
+        read_metadata_future,
+        load_crate_index_future,
+    );
     loop {
         let m = futures::select! {
             res = run_cargo_future => {
@@ -84,7 +92,19 @@ async fn cargo_worker_loop(
             res = read_metadata_future => {
                 metadata = res;
                 if let Some(metadata) = &metadata {
-                    apply_metadata(metadata, update_features, &mut package, handle.clone());
+                    apply_metadata(metadata, crates_index.as_ref(), update_features, &mut package, handle.clone());
+                    update_features = false;
+                }
+                continue;
+            }
+            index = load_crate_index_future => {
+                match index {
+                    Ok(idx) => crates_index = Some(idx),
+                    // TODO: ideally we should show that in the UI somehow
+                    Err(error) => eprintln!("Error while fetching crate index: {}", error),
+                };
+                if let Some(metadata) = &metadata {
+                    apply_metadata(metadata, crates_index.as_ref(), update_features, &mut package, handle.clone());
                     update_features = false;
                 }
                 continue;
@@ -120,6 +140,7 @@ async fn cargo_worker_loop(
                 if let Some(metadata) = &metadata {
                     apply_metadata(
                         metadata,
+                        crates_index.as_ref(),
                         /*update_features*/ true,
                         &mut package,
                         handle.clone(),
@@ -128,6 +149,16 @@ async fn cargo_worker_loop(
             }
         }
     }
+}
+
+async fn load_crate_index() -> Result<crates_index::Index, String> {
+    tokio::task::spawn_blocking(|| -> Result<crates_index::Index, String> {
+        let index = crates_index::Index::new_cargo_default();
+        index.retrieve_or_update().map_err(|x| x.to_string())?;
+        Ok(index)
+    })
+    .await
+    .unwrap_or_else(|x| Err(x.to_string()))
 }
 
 async fn run_cargo(
@@ -337,6 +368,7 @@ async fn read_metadata(manifest: Manifest, handle: sixtyfps::Weak<CargoUI>) -> O
 
 fn apply_metadata(
     metadata: &Metadata,
+    crates_index: Option<&crates_index::Index>,
     mut update_features: bool,
     package: &mut SharedString,
     handle: sixtyfps::Weak<CargoUI>,
@@ -447,6 +479,7 @@ fn apply_metadata(
                 &mut depgraph_tree,
                 &mut duplicates,
                 &metadata,
+                crates_index,
                 &map,
                 0,
             );
@@ -507,14 +540,17 @@ fn build_dep_tree(
     depgraph_tree: &mut Vec<TreeNode>,
     duplicates: &mut HashSet<PackageId>,
     metadata: &Metadata,
+    crates_index: Option<&crates_index::Index>,
     map: &HashMap<PackageId, &Node>,
     indentation: i32,
 ) {
     let package = &metadata[package_id];
-    let mut text = format!("{} {}", package.name, package.version).into();
-    if duplicates.contains(package_id) {
-        text += " (duplicated)";
-    }
+    let duplicated = duplicates.contains(package_id);
+    let outdated = crates_index
+        .and_then(|idx| idx.crate_(&package.name))
+        .and_then(|c| c.highest_stable_version().cloned())
+        .and_then(|v| Version::from_str(v.version()).ok())
+        .map_or(false, |latest| latest > package.version);
     let dep_kind = node_dep
         .filter(|n| {
             !n.dep_kinds
@@ -534,7 +570,10 @@ fn build_dep_tree(
             has_children: false,
             indentation,
             open: indentation != 1,
-            text,
+            version: package.version.to_string().into(),
+            crate_name: package.name.as_str().into(),
+            outdated,
+            duplicated,
             dep_kind,
         }
         .into(),
@@ -551,6 +590,7 @@ fn build_dep_tree(
                 &mut node.children,
                 duplicates,
                 metadata,
+                crates_index,
                 map,
                 indentation + 1,
             );

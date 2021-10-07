@@ -95,7 +95,10 @@ export BuildingPane := Pane {
 }
 
 export struct DependencyNode := {
-    text: string,
+    crate_name: string,
+    version: string,
+    duplicated: bool,
+    outdated: bool,
     dep_kind: string,
     indentation: int,
     has_children: bool,
@@ -121,10 +124,17 @@ DepTreePane := Pane {
                         clicked => { dep.open = !dep.open; }
                     }
                 }
-                Text { text: dep.text; }
+                crate_name := Text { text: dep.crate_name; }
+                Text {
+                    text: dep.version;
+                    color: dep.outdated ? red : crate_name.color;
+                }
                 if (dep.dep_kind != "") : Text {
                     text: " (\{dep.dep_kind})";
                     color: gray;
+                }
+                if (dep.duplicated) : Text {
+                    text: "(duplicated)";
                 }
             }
         }
