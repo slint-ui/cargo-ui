@@ -364,12 +364,16 @@ fn apply_metadata(
         update_features = true;
     };
 
+    let is_workspace = metadata.workspace_members.len() > 1;
+
     for p in metadata
         .packages
         .iter()
         .filter(|p| metadata.workspace_members.contains(&p.id))
     {
         packages.push(p.name.as_str().into());
+
+        let is_selected = !is_workspace || package.is_empty() || package == p.name.as_str();
 
         if update_features {
             let default_features: HashSet<_> = p
@@ -378,14 +382,14 @@ fn apply_metadata(
                 .map(|default_features| default_features.iter().cloned().collect())
                 .unwrap_or_default();
 
-            if package.is_empty() || package == p.name.as_str() {
+            if is_selected {
                 // Use get_or_insert_with_default() when https://github.com/rust-lang/rust/issues/82901 is stable
                 features.get_or_insert_with(|| Default::default()).extend(
                     p.features
                         .keys()
                         .filter(|name| *name != "default")
                         .map(|name| Feature {
-                            name: if package.is_empty() {
+                            name: if package.is_empty() && is_workspace {
                                 [p.name.as_str(), name.as_str()].join("/").into()
                             } else {
                                 name.into()
@@ -397,7 +401,7 @@ fn apply_metadata(
             }
         }
 
-        if !package.is_empty() && package != p.name.as_str() {
+        if !is_selected {
             continue;
         }
         for t in &p.targets {
@@ -415,7 +419,7 @@ fn apply_metadata(
         h.set_current_package(pkg);
         // The model always has at least two entries, one for all and the first package,
         // so enable multi-package selection only if there is something else to select.
-        h.set_allow_package_selection(packages.len() > 2);
+        h.set_allow_package_selection(is_workspace);
         h.set_packages(ModelHandle::from(
             Rc::new(VecModel::from(packages)) as Rc<dyn Model<Data = SharedString>>
         ));
