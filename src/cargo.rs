@@ -2,7 +2,8 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use super::{Action, CargoUI, DependencyNode, Diag, Feature};
+use super::{Action, CargoUI, DependencyData, DependencyNode, Diag, Feature};
+use anyhow::Context;
 use cargo_metadata::Version;
 use cargo_metadata::{diagnostic::DiagnosticLevel, Metadata, Node, PackageId};
 use futures::future::{Fuse, FutureExt};
@@ -34,6 +35,10 @@ pub enum CargoMessage {
     PackageSelected(SharedString),
     ShowOpenDialog,
     Cancel,
+    /// Remove the dependency `.1` from package `.0`
+    DependencyRemove(SharedString, SharedString),
+    /// Upgrade the dependency `.1` in package `.0`
+    DependencyUpgrade(SharedString, SharedString),
 }
 
 pub struct CargoWorker {
@@ -145,6 +150,47 @@ async fn cargo_worker_loop(
                         &mut package,
                         handle.clone(),
                     );
+                }
+            }
+            Some(CargoMessage::DependencyRemove(pkg, dep)) => {
+                let pkg = PackageId { repr: pkg.into() };
+                if let Some(pkg) = metadata
+                    .as_ref()
+                    .and_then(|metadata| metadata.packages.iter().find(|p| p.id == pkg))
+                {
+                    match dependency_remove(pkg.manifest_path.as_ref(), dep.as_str()) {
+                        Ok(()) => read_metadata_future
+                            .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
+                        Err(e) => {
+                            dbg!(e);
+                            handle.clone().upgrade_in_event_loop(|h| {
+                                h.set_status("Not yet supported".into());
+                            });
+                        }
+                    }
+                }
+            }
+            Some(CargoMessage::DependencyUpgrade(pkg, dep)) => {
+                let pkg = PackageId { repr: pkg.into() };
+                if let Some((pkg, cr)) = metadata
+                    .as_ref()
+                    .and_then(|metadata| metadata.packages.iter().find(|p| p.id == pkg))
+                    .and_then(|p| Some((p, crates_index.as_ref()?.crate_(&dep)?)))
+                {
+                    match dependency_upgrade_to_version(
+                        pkg.manifest_path.as_ref(),
+                        dep.as_str(),
+                        cr.latest_version().version(),
+                    ) {
+                        Ok(()) => read_metadata_future
+                            .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
+                        Err(e) => {
+                            dbg!(e);
+                            handle.clone().upgrade_in_event_loop(|h| {
+                                h.set_status("Not yet supported".into());
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -476,6 +522,7 @@ fn apply_metadata(
             build_dep_tree(
                 m,
                 None,
+                &SharedString::default(),
                 &mut depgraph_tree,
                 &mut duplicates,
                 &metadata,
@@ -488,7 +535,8 @@ fn apply_metadata(
 
     handle.upgrade_in_event_loop(move |h| {
         let model = Rc::new(DepGraphModel::from(depgraph_tree));
-        h.set_deptree(ModelHandle::new(model))
+        h.global::<DependencyData>()
+            .set_model(ModelHandle::new(model))
     });
 }
 
@@ -537,6 +585,7 @@ struct TreeNode {
 fn build_dep_tree(
     package_id: &PackageId,
     node_dep: Option<&cargo_metadata::NodeDep>,
+    parent_package: &SharedString,
     depgraph_tree: &mut Vec<TreeNode>,
     duplicates: &mut HashSet<PackageId>,
     metadata: &Metadata,
@@ -575,6 +624,7 @@ fn build_dep_tree(
             outdated,
             duplicated,
             dep_kind,
+            parent_package: parent_package.clone(),
         }
         .into(),
         children: Default::default(),
@@ -587,6 +637,7 @@ fn build_dep_tree(
             build_dep_tree(
                 &d.pkg,
                 Some(&d),
+                &package_id.repr.as_str().into(),
                 &mut node.children,
                 duplicates,
                 metadata,
@@ -730,4 +781,42 @@ impl FeatureSettings {
                 .arg(self.enabled_features.iter().join(","));
         }
     }
+}
+
+fn dependency_remove(pkg: &Path, dependency: &str) -> anyhow::Result<()> {
+    let manifest_contents = std::fs::read_to_string(pkg)
+        .with_context(|| format!("Failed to load '{}'", pkg.display()))?;
+    let mut document: toml_edit::Document = manifest_contents.parse()?;
+    // FIXME: we need to do it also for dev-dependencies and build-dependencies
+    let dependencies = &mut document["dependencies"];
+    let removed = !std::mem::take(&mut dependencies[dependency]).is_none();
+    if !removed {
+        anyhow::bail!("'{}' was not in [dependencies]", dependency);
+    }
+    std::fs::write(pkg, document.to_string().as_bytes())
+        .with_context(|| format!("Failed to write '{}'", pkg.display()))
+}
+
+fn dependency_upgrade_to_version(
+    pkg: &Path,
+    dependency: &str,
+    version: &str,
+) -> anyhow::Result<()> {
+    let manifest_contents = std::fs::read_to_string(pkg)
+        .with_context(|| format!("Failed to load '{}'", pkg.display()))?;
+    let mut document: toml_edit::Document = manifest_contents.parse()?;
+    // FIXME: we need to do it also for dev-dependencies and build-dependencies
+    let dep = &mut document["dependencies"][dependency];
+    if dep.is_none() {
+        anyhow::bail!("'{}' was not in [dependencies]", dependency);
+    }
+    if dep.is_str() {
+        *dep = toml_edit::Item::Value(version.into());
+    } else if dep.is_table_like() {
+        dep["version"] = toml_edit::Item::Value(version.into());
+    } else {
+        anyhow::bail!("Could not understand the manifest");
+    }
+    std::fs::write(pkg, document.to_string().as_bytes())
+        .with_context(|| format!("Failed to write '{}'", pkg.display()))
 }

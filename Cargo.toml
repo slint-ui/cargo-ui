@@ -28,6 +28,9 @@ itertools = "0.10"
 shlex = "1"
 open = "2"
 crates-index = "0.17"
+toml_edit = "0.5"
+anyhow = "1"
+
 
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 rfd = "0.4.0"

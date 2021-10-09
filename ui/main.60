@@ -9,10 +9,12 @@ import {
 } from "sixtyfps_widgets.60";
 
 import {
-    Action, Feature, CargoView, Diag, DependencyNode, BuildingPane
+    Action, Feature, CargoView, Diag, DependencyData, DependencyNode, BuildingPane
 } from "cargo.60";
 
 import { Toolchain, RustupView } from "rustup.60";
+
+export {DependencyData, DependencyNode }
 
 CargoUI := Window {
     title: "Cargo UI";
@@ -42,7 +44,6 @@ CargoUI := Window {
     callback reload-manifest <=> cargo-view.reload-manifest;
     callback show-open-dialog <=> cargo-view.show-open-dialog;
     property build-pane-visible <=> cargo-view.build-pane-visible;
-    property deptree <=> cargo-view.deptree;
     property has-features <=> cargo-view.has-features;
     property package-features <=> cargo-view.package-features;
     property enable-default-features <=> cargo-view.enable-default-features;
@@ -51,6 +52,9 @@ CargoUI := Window {
     // Rustup aliases
     property toolchains <=> rustup-view.toolchains;
     property toolchains-available <=> rustup-view.toolchains-available;
+
+    // Workaround: remove in SixtyFPS 0.1.4
+    property <DependencyNode> workaround;
 
     VerticalBox {
 

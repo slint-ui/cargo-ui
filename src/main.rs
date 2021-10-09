@@ -60,6 +60,23 @@ fn main() {
         }
     });
 
+    cargo_ui.global::<DependencyData>().on_remove({
+        let cargo_channel = cargo_worker.channel.clone();
+        move |pkg, dep| {
+            cargo_channel
+                .send(CargoMessage::DependencyRemove(pkg, dep))
+                .unwrap()
+        }
+    });
+    cargo_ui.global::<DependencyData>().on_request_upgrade({
+        let cargo_channel = cargo_worker.channel.clone();
+        move |pkg, dep| {
+            cargo_channel
+                .send(CargoMessage::DependencyUpgrade(pkg, dep))
+                .unwrap()
+        }
+    });
+
     cargo_ui.run();
 
     cargo_worker.join().unwrap();

@@ -7,7 +7,6 @@ import {
     LineEdit, ListView, GroupBox, CheckBox
 } from "sixtyfps_widgets.60";
 
-
 export struct Diag := {
     short: string,
     expanded: string,
@@ -103,38 +102,64 @@ export struct DependencyNode := {
     indentation: int,
     has_children: bool,
     open: bool,
+    parent_package: string,
+}
+
+export global DependencyData := {
+    property <[DependencyNode]> model;
+    // the parameter is the parent_package and the crate_name
+    callback request_upgrade(string, string);
+    // the parameter is the parent_package and the crate_name
+    callback remove(string, string);
 }
 
 DepTreePane := Pane {
     callback back <=> back_btn.clicked;
 
-    property <[DependencyNode]> model;
+    property <[DependencyNode]> model: DependencyData.model;
 
     VerticalBox {
         ListView {
             for dep in model : HorizontalLayout {
-                alignment: start;
+                width: preferred-width;
                 spacing: 5px;
                 Rectangle { width: dep.indentation * 20px; }
                 Text {
                     text: !dep.has_children ? "" : dep.open ? "⊟" : "⊞";
                     horizontal-alignment: right;
+                    vertical-alignment: center;
                     width: 20px;
                     TouchArea {
                         clicked => { dep.open = !dep.open; }
                     }
                 }
-                crate_name := Text { text: dep.crate_name; }
+                crate_name := Text {
+                    text: dep.crate_name;
+                    vertical-alignment: center;
+                }
                 Text {
                     text: dep.version;
                     color: dep.outdated ? red : crate_name.color;
+                    vertical-alignment: center;
                 }
                 if (dep.dep_kind != "") : Text {
                     text: " (\{dep.dep_kind})";
                     color: gray;
+                    vertical-alignment: center;
                 }
                 if (dep.duplicated) : Text {
                     text: "(duplicated)";
+                    vertical-alignment: center;
+                }
+                if (dep.outdated && dep.indentation == 1) : Button {
+                    clicked => { DependencyData.request_upgrade(dep.parent_package, dep.crate_name); }
+                    text: "🔄 Upgrade";
+                    min-height: crate_name.preferred_height * 1.25;
+                }
+                if (dep.indentation == 1) : Button {
+                    clicked => { DependencyData.remove(dep.parent_package, dep.crate_name); }
+                    text: "🗑️ Remove";
+                    min-height: crate_name.preferred_height * 1.25;
                 }
             }
         }
@@ -147,6 +172,7 @@ DepTreePane := Pane {
     }
 }
 
+
 /*
 Debug_DepTreePane := Window {
     title: "Cargo UI";
@@ -154,18 +180,17 @@ Debug_DepTreePane := Window {
     preferred_width: 300px;
     DepTreePane{
         model: [
-        { text: "AAA", indentation: 0, has_children: true, open: true },
-        { text: "BBB", indentation: 1, has_children: false, open: false, },
-        { text: "CCC", indentation: 1, has_children: false, open: false, },
-        { text: "DDD", indentation: 1, has_children: true , open: true, },
-        { text: "EEE", indentation: 2, has_children: true , open: false, },
-        { text: "FFF", indentation: 1, has_children: false , open: false, },
+        { crate_name: "AAA", version: "0.1", indentation: 0, has_children: true, open: true },
+        { crate_name: "BBB", version: "0.1", indentation: 1, has_children: false, open: false, },
+        { crate_name: "CCC", version: "0.1", indentation: 1, has_children: false, open: false, outdated: true, },
+        { crate_name: "DDD", version: "0.1", indentation: 1, has_children: true , open: true, },
+        { crate_name: "EEE", version: "0.1", indentation: 2, has_children: true , open: false, },
+        { crate_name: "FFF", version: "0.1", indentation: 1, has_children: false , open: false, },
 
     ];
     }
 }
 */
-
 
 export struct Feature := {
     name: string,
@@ -391,8 +416,7 @@ export CargoView := GridBox {
         animate animate_opacity { duration: 250ms; easing: ease; }
 
         if (deptree.animate_opacity > 0.01) : DepTreePane {
-            model: root.deptree;
-            background: root.background;
+                        background: root.background;
             opacity: parent.animate_opacity;
             back => { deptree-pane-visible = false; }
         }
