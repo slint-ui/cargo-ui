@@ -889,7 +889,11 @@ async fn refresh_install_list(
     let mut result = Vec::new();
 
     while let Some(line) = stdout.next_line().await? {
-        if line.starts_with(' ') || !line.ends_with(':') {
+        if line.starts_with(' ') {
+            // Just skip the binary names
+            continue;
+        }
+        if !line.ends_with(':') {
             return Ok(report_error(
                 handle,
                 &format!("Parse error: expected crate description: '{}'", line),
