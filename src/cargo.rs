@@ -13,7 +13,7 @@ use itertools::Itertools;
 use serde::Deserialize;
 use sixtyfps::{ComponentHandle, Model, ModelHandle, SharedString, VecModel};
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::str::FromStr;
@@ -30,6 +30,15 @@ pub struct FeatureSettings {
 pub enum InstallJob {
     Install(SharedString),
     Uninstall(SharedString),
+}
+
+impl InstallJob {
+    fn crate_name(&self) -> &SharedString {
+        match self {
+            InstallJob::Install(a) => a,
+            InstallJob::Uninstall(a) => a,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -88,7 +97,8 @@ async fn cargo_worker_loop(
     let mut crates_index: Option<crates_index::Index> = None;
     let mut package = SharedString::default();
     let mut update_features = true;
-    let mut install_queue = std::collections::VecDeque::new();
+    let mut install_queue = VecDeque::new();
+    let mut currently_installing = SharedString::default();
 
     let run_cargo_future = Fuse::terminated();
     let read_metadata_future = read_metadata(manifest.clone(), handle.clone()).fuse();
@@ -126,17 +136,23 @@ async fn cargo_worker_loop(
                     apply_metadata(metadata, crates_index.as_ref(), update_features, &mut package, handle.clone());
                     update_features = false;
                 }
+                if refresh_install_list_future.is_terminated() {
+                    refresh_install_list_future.set(refresh_install_list(handle.clone()).fuse());
+                }
                 continue;
             }
             res = refresh_install_list_future =>  {
-                res?;
+                apply_install_list(res?, crates_index.as_ref(), &install_queue, &currently_installing, handle.clone());
                 continue;
             }
             res = process_install_future => {
                 res?;
                 refresh_install_list_future.set(refresh_install_list(handle.clone()).fuse());
                 if let Some(job) = install_queue.pop_front() {
+                    currently_installing = job.crate_name().clone();
                     process_install_future.set(process_install(job).fuse());
+                } else {
+                    currently_installing = Default::default();
                 }
                 continue;
             }
@@ -221,6 +237,7 @@ async fn cargo_worker_loop(
             }
             Some(CargoMessage::Install(job)) => {
                 if process_install_future.is_terminated() {
+                    currently_installing = job.crate_name().clone();
                     process_install_future.set(process_install(job).fuse());
                 } else {
                     install_queue.push_back(job);
@@ -858,7 +875,9 @@ fn dependency_upgrade_to_version(
         .with_context(|| format!("Failed to write '{}'", pkg.display()))
 }
 
-async fn refresh_install_list(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Result<()> {
+async fn refresh_install_list(
+    handle: sixtyfps::Weak<CargoUI>,
+) -> tokio::io::Result<Vec<InstalledCrate>> {
     let mut cargo_install_command = cargo_command();
     cargo_install_command.arg("install").arg("--list");
     let mut spawn_result = cargo_install_command
@@ -888,6 +907,7 @@ async fn refresh_install_list(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Res
         result.push(InstalledCrate {
             name: name.into(),
             version: version.into(),
+            ..Default::default()
         });
         let next_line = stdout.next_line().await?;
         if let Some(next_line) = next_line {
@@ -901,23 +921,16 @@ async fn refresh_install_list(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Res
             break;
         }
     }
-
-    handle.upgrade_in_event_loop(move |ui| {
-        ui.global::<CargoInstallData>()
-            .set_crates(ModelHandle::from(
-                Rc::new(VecModel::from(result)) as Rc<dyn Model<Data = InstalledCrate>>
-            ));
-    });
-
-    Ok(())
+    Ok(result)
 }
 
-fn report_error(_handle: sixtyfps::Weak<CargoUI>, arg: &str) {
+fn report_error<T: Default>(_handle: sixtyfps::Weak<CargoUI>, arg: &str) -> T {
     /* TODO
     handle.clone().upgrade_in_event_loop(|ui| {
 
     });*/
     eprintln!("{}", arg);
+    Default::default()
 }
 
 async fn process_install(job: InstallJob) -> std::io::Result<()> {
@@ -950,4 +963,34 @@ async fn process_install(job: InstallJob) -> std::io::Result<()> {
         }
     }
     Ok(())
+}
+
+fn apply_install_list(
+    mut list: Vec<InstalledCrate>,
+    crates_index: Option<&crates_index::Index>,
+    install_queue: &VecDeque<InstallJob>,
+    currently_installing: &str,
+    handle: sixtyfps::Weak<CargoUI>,
+) {
+    let set: HashSet<_> = install_queue.iter().map(|ci| ci.crate_name()).collect();
+    for cr in list.iter_mut() {
+        cr.queued = set.contains(&cr.name) || cr.name == currently_installing;
+        cr.new_version = crates_index
+            .and_then(|idx| idx.crate_(&cr.name))
+            .and_then(|from_idx| {
+                let new_version = from_idx.highest_stable_version()?.version();
+                (Version::from_str(new_version).ok()?
+                    > Version::from_str(cr.version.strip_prefix("v")?).ok()?)
+                .then(|| new_version)
+                .map(|x| x.into())
+            })
+            .unwrap_or_default();
+    }
+
+    handle.upgrade_in_event_loop(move |ui| {
+        ui.global::<CargoInstallData>()
+            .set_crates(ModelHandle::from(
+                Rc::new(VecModel::from(list)) as Rc<dyn Model<Data = InstalledCrate>>
+            ));
+    });
 }

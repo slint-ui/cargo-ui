@@ -10,7 +10,11 @@ import {
 import { Action } from "cargo.60";
 
 export struct InstalledCrate := {
-    name: string, version: string
+    name: string,
+    version: string,
+    // when not null, this is the version to upgrate to
+    new_version: string,
+    queued: bool,
 }
 
 export global CargoInstallData := {
@@ -35,18 +39,31 @@ export CargoInstallView := GridBox {
     ListView {
         colspan: 2;
         for crate in CargoInstallData.crates: HorizontalBox {
-            Text {
-                text: "\{crate.name} \{crate.version}";
-                horizontal-stretch: 1;
+            crate_name := Text {
+                text: {crate.name};
                 vertical-alignment: center;
             }
-            Button {
-                text: "🔄 Upgrade";
-                clicked => { CargoInstallData.upgrade(crate.name); }
+            Text {
+                text: {crate.version};
+                vertical-alignment: center;
+                color: crate.new_version == "" ? crate_name.color : red;
+            }
+            Rectangle {  }
+            if (crate.new_version != "") : Button {
+                text: "🔄 Upgrade to " + crate.new_version;
+                clicked => {
+                    crate.queued = true;
+                    CargoInstallData.upgrade(crate.name);
+                }
+                enabled: !crate.queued;
             }
             Button {
                 text: "🗑️ Uninstall";
-                clicked => { CargoInstallData.uninstall(crate.name); }
+                clicked => {
+                    crate.queued = true;
+                    CargoInstallData.uninstall(crate.name);
+                }
+                enabled: !crate.queued;
             }
         }
     }

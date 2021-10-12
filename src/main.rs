@@ -14,6 +14,8 @@ use cargo::*;
 mod rustup;
 use rustup::*;
 
+use sixtyfps::Model;
+
 fn main() {
     let cargo_ui = CargoUI::new();
 
@@ -94,7 +96,20 @@ fn main() {
     });
     cargo_ui.global::<CargoInstallData>().on_upgrade_all({
         let cargo_channel = cargo_worker.channel.clone();
-        move || cargo_channel.send(todo!()).unwrap()
+        let cargo_ui = cargo_ui.as_weak();
+        move || {
+            let installed = cargo_ui.unwrap().global::<CargoInstallData>().get_crates();
+            for i in 0..installed.row_count() {
+                let mut c = installed.row_data(i);
+                if !c.queued && !c.new_version.is_empty() {
+                    c.queued = true;
+                    cargo_channel
+                        .send(CargoMessage::Install(InstallJob::Install(c.name.clone())))
+                        .unwrap();
+                    installed.set_row_data(i, c);
+                }
+            }
+        }
     });
 
     cargo_ui.run();
