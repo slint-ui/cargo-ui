@@ -60,7 +60,9 @@ CargoUI := Window {
         TabWidget {
             Tab {
                 title: "Project / Workspace";
-                cargo-view := CargoView { }
+                cargo-view := CargoView {
+                    background: root.background;
+                }
             }
 
             Tab {
