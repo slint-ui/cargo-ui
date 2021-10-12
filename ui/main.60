@@ -58,19 +58,14 @@ CargoUI := Window {
 
     VerticalBox {
         TabWidget {
-            current-index: 1;
             Tab {
                 title: "Project / Workspace";
-                cargo-view := CargoView {
-                    background: root.background;
-                }
+                cargo-view := CargoView { }
             }
 
             Tab {
                 title: "Install";
-                CargoInstallView {
-                    action(action) => { root.action(action); }
-                }
+                CargoInstallView { }
             }
 
             Tab {

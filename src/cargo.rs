@@ -2,11 +2,13 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use super::{Action, CargoUI, DependencyData, DependencyNode, Diag, Feature};
+use super::{
+    Action, CargoInstallData, CargoUI, DependencyData, DependencyNode, Diag, Feature,
+    InstalledCrate,
+};
 use anyhow::Context;
-use cargo_metadata::Version;
-use cargo_metadata::{diagnostic::DiagnosticLevel, Metadata, Node, PackageId};
-use futures::future::{Fuse, FutureExt};
+use cargo_metadata::{diagnostic::DiagnosticLevel, Metadata, Node, PackageId, Version};
+use futures::future::{Fuse, FusedFuture, FutureExt};
 use itertools::Itertools;
 use serde::Deserialize;
 use sixtyfps::{ComponentHandle, Model, ModelHandle, SharedString, VecModel};
@@ -24,6 +26,12 @@ pub struct FeatureSettings {
     enable_default_features: bool,
 }
 
+#[derive(Debug, Clone)]
+pub enum InstallJob {
+    Install(SharedString),
+    Uninstall(SharedString),
+}
+
 #[derive(Debug)]
 pub enum CargoMessage {
     Quit,
@@ -39,6 +47,7 @@ pub enum CargoMessage {
     DependencyRemove(SharedString, SharedString),
     /// Upgrade the dependency `.1` in package `.0`
     DependencyUpgrade(SharedString, SharedString),
+    Install(InstallJob),
 }
 
 pub struct CargoWorker {
@@ -79,14 +88,19 @@ async fn cargo_worker_loop(
     let mut crates_index: Option<crates_index::Index> = None;
     let mut package = SharedString::default();
     let mut update_features = true;
+    let mut install_queue = std::collections::VecDeque::new();
 
     let run_cargo_future = Fuse::terminated();
     let read_metadata_future = read_metadata(manifest.clone(), handle.clone()).fuse();
     let load_crate_index_future = load_crate_index().fuse();
+    let refresh_install_list_future = refresh_install_list(handle.clone()).fuse();
+    let process_install_future = Fuse::terminated();
     futures::pin_mut!(
         run_cargo_future,
         read_metadata_future,
         load_crate_index_future,
+        refresh_install_list_future,
+        process_install_future,
     );
     loop {
         let m = futures::select! {
@@ -111,6 +125,18 @@ async fn cargo_worker_loop(
                 if let Some(metadata) = &metadata {
                     apply_metadata(metadata, crates_index.as_ref(), update_features, &mut package, handle.clone());
                     update_features = false;
+                }
+                continue;
+            }
+            res = refresh_install_list_future =>  {
+                res?;
+                continue;
+            }
+            res = process_install_future => {
+                res?;
+                refresh_install_list_future.set(refresh_install_list(handle.clone()).fuse());
+                if let Some(job) = install_queue.pop_front() {
+                    process_install_future.set(process_install(job).fuse());
                 }
                 continue;
             }
@@ -193,6 +219,13 @@ async fn cargo_worker_loop(
                     }
                 }
             }
+            Some(CargoMessage::Install(job)) => {
+                if process_install_future.is_terminated() {
+                    process_install_future.set(process_install(job).fuse());
+                } else {
+                    install_queue.push_back(job);
+                }
+            }
         }
     }
 }
@@ -232,8 +265,7 @@ async fn run_cargo(
     }
     let _reset_is_building = ResetIsBuilding(handle.clone());
 
-    let cargo_path = std::env::var("CARGO").unwrap_or_else(|_| "cargo".into());
-    let mut cargo_command = tokio::process::Command::new(cargo_path);
+    let mut cargo_command = cargo_command();
     cargo_command.arg(action.command.as_str());
     cargo_command
         .arg("--manifest-path")
@@ -337,6 +369,11 @@ async fn run_cargo(
     });
 
     Ok(())
+}
+
+fn cargo_command() -> tokio::process::Command {
+    let cargo_path = std::env::var("CARGO").unwrap_or_else(|_| "cargo".into());
+    tokio::process::Command::new(cargo_path)
 }
 
 fn cargo_message_to_diag(msg: cargo_metadata::Message) -> Option<Diag> {
@@ -819,4 +856,98 @@ fn dependency_upgrade_to_version(
     }
     std::fs::write(pkg, document.to_string().as_bytes())
         .with_context(|| format!("Failed to write '{}'", pkg.display()))
+}
+
+async fn refresh_install_list(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Result<()> {
+    let mut cargo_install_command = cargo_command();
+    cargo_install_command.arg("install").arg("--list");
+    let mut spawn_result = cargo_install_command
+        .stdout(std::process::Stdio::piped())
+        .kill_on_drop(true)
+        .spawn()?;
+
+    let mut stdout = BufReader::new(spawn_result.stdout.take().unwrap()).lines();
+    let mut result = Vec::new();
+
+    while let Some(line) = stdout.next_line().await? {
+        if line.starts_with(' ') || !line.ends_with(':') {
+            return Ok(report_error(
+                handle,
+                &format!("Parse error: expected crate description: '{}'", line),
+            ));
+        }
+        let line = line.trim_end_matches(':');
+        let (name, rest) = line.split_once(' ').unwrap_or((line, ""));
+        if !rest.starts_with('v') {
+            return Ok(report_error(
+                handle,
+                &format!("Parse error: expected version number in : '{}'", line),
+            ));
+        }
+        let (version, _rest) = rest.split_once(' ').unwrap_or((rest, ""));
+        result.push(InstalledCrate {
+            name: name.into(),
+            version: version.into(),
+        });
+        let next_line = stdout.next_line().await?;
+        if let Some(next_line) = next_line {
+            if !next_line.starts_with(' ') {
+                return Ok(report_error(
+                    handle,
+                    &format!("Parse error: expected crate name: '{}'", next_line),
+                ));
+            }
+        } else {
+            break;
+        }
+    }
+
+    handle.upgrade_in_event_loop(move |ui| {
+        ui.global::<CargoInstallData>()
+            .set_crates(ModelHandle::from(
+                Rc::new(VecModel::from(result)) as Rc<dyn Model<Data = InstalledCrate>>
+            ));
+    });
+
+    Ok(())
+}
+
+fn report_error(_handle: sixtyfps::Weak<CargoUI>, arg: &str) {
+    /* TODO
+    handle.clone().upgrade_in_event_loop(|ui| {
+
+    });*/
+    eprintln!("{}", arg);
+}
+
+async fn process_install(job: InstallJob) -> std::io::Result<()> {
+    let mut cmd = cargo_command();
+    match &job {
+        InstallJob::Install(cr) => cmd.arg("install").arg("--force").arg(cr.as_str()),
+        InstallJob::Uninstall(cr) => cmd.arg("uninstall").arg(cr.as_str()),
+    };
+    let mut res = cmd
+        .kill_on_drop(true)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()?;
+
+    let mut stdout = BufReader::new(res.stdout.take().unwrap()).lines();
+    let mut stderr = BufReader::new(res.stderr.take().unwrap()).lines();
+    loop {
+        tokio::select! {
+            line = stderr.next_line() => {
+                let line = if let Some(line) = line? { line } else { break };
+                dbg!({"stderr"; line});
+                /*handle.clone().upgrade_in_event_loop(move |h| {
+                    h.set_status(line.into());
+                });*/
+            }
+            line = stdout.next_line() => {
+                let line = if let Some(line) = line? { line } else { break };
+                dbg!({"stdout"; line});
+            }
+        }
+    }
+    Ok(())
 }

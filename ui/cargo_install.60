@@ -14,17 +14,13 @@ export struct InstalledCrate := {
 }
 
 export global CargoInstallData := {
-    callback update_all();
-    callback update(string);
+    callback upgrade_all();
+    callback upgrade(string);
     callback uninstall(string);
-    property<[InstalledCrate]> crates: [{
-        name: "dummy", version: "v0.0.0",
-    }];
+    property<[InstalledCrate]> crates;
 }
 
 export CargoInstallView := GridBox {
-    callback update_all();
-    callback action(Action);
     Row {
         Text {
             text: "Currently installed packages";
@@ -32,8 +28,8 @@ export CargoInstallView := GridBox {
             vertical-alignment: center;
         }
         Button {
-            text: "🔄 Update all";
-            clicked => { update_all() }
+            text: "🔄 Upgrade all";
+            clicked => { CargoInstallData.upgrade_all() }
         }
     }
     ListView {
@@ -45,12 +41,12 @@ export CargoInstallView := GridBox {
                 vertical-alignment: center;
             }
             Button {
-                text: "🔄 Update";
-                clicked => { action({ command: "install", extra: crate.name }) }
+                text: "🔄 Upgrade";
+                clicked => { CargoInstallData.upgrade(crate.name); }
             }
             Button {
                 text: "🗑️ Uninstall";
-                clicked => { action({ command: "uninstall", extra: crate.name }) }
+                clicked => { CargoInstallData.uninstall(crate.name); }
             }
         }
     }
