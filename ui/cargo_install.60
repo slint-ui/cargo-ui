@@ -15,6 +15,8 @@ export struct InstalledCrate := {
     // when not null, this is the version to upgrate to
     new_version: string,
     queued: bool,
+    status: string,
+    progress: bool,
 }
 
 export global CargoInstallData := {
@@ -22,12 +24,21 @@ export global CargoInstallData := {
     callback upgrade(string);
     callback uninstall(string);
     property<[InstalledCrate]> crates;
+    // workaround to get all the progress bar animated
+    property <float> animated;
 }
 
 export CargoInstallView := GridBox {
+    property <float> animated: CargoInstallData.animated;
+    animate animated {
+        duration: 2s;
+        loop-count: -1;
+    }
+
     Row {
         Text {
-            text: "Currently installed packages";
+            // The animated binding there is a workaround so it fetches it
+            text: "Currently installed packages" + ((animated < -1)?"":"");
             horizontal-stretch: 1;
             vertical-alignment: center;
         }
@@ -38,32 +49,53 @@ export CargoInstallView := GridBox {
     }
     ListView {
         colspan: 2;
-        for crate in CargoInstallData.crates: HorizontalBox {
-            crate_name := Text {
-                text: {crate.name};
-                vertical-alignment: center;
-            }
-            Text {
-                text: {crate.version};
-                vertical-alignment: center;
-                color: crate.new_version == "" ? crate_name.color : red;
-            }
-            Rectangle {  }
-            if (crate.new_version != "") : Button {
-                text: "🔄 Upgrade to " + crate.new_version;
-                clicked => {
-                    crate.queued = true;
-                    CargoInstallData.upgrade(crate.name);
+        for crate in CargoInstallData.crates: VerticalLayout {
+            HorizontalBox {
+                crate_name := Text {
+                    text: {crate.name};
+                    vertical-alignment: center;
                 }
-                enabled: !crate.queued;
-            }
-            Button {
-                text: "🗑️ Uninstall";
-                clicked => {
-                    crate.queued = true;
-                    CargoInstallData.uninstall(crate.name);
+                Text {
+                    text: {crate.version};
+                    vertical-alignment: center;
+                    color: crate.new_version == "" ? crate_name.color : red;
                 }
-                enabled: !crate.queued;
+                if !crate.queued : Rectangle {}
+
+                if (!crate.queued &&  crate.new_version != "") : Button {
+                    text: "🔄 Upgrade to " + crate.new_version;
+                    clicked => {
+                        crate.queued = true;
+                        CargoInstallData.upgrade(crate.name);
+                    }
+                }
+                if !crate.queued : Button {
+                    text: "🗑️ Uninstall";
+                    clicked => {
+                        crate.queued = true;
+                        CargoInstallData.uninstall(crate.name);
+                    }
+                }
+                if crate.queued: Text {
+                    text: crate.status != "" ? crate.status : "Queued...";
+                    horizontal-stretch: 1;
+                    overflow: elide;
+                    horizontal-alignment: right;
+                }
+            }
+            if crate.queued : Rectangle {
+                height: crate_name.preferred_height;
+                Rectangle {
+                    width: parent.width / 2;
+                    x: parent.width - width - 6px;
+                    height: parent.height - 6px;
+                    property <color> col1 : #2320db;
+                    property <color> col2 : #4fa4dd;
+                    background: animated < 0.25 ? @linear-gradient(90deg, col1 0%, col1 animated*4, col2 100%)
+                                : animated < 0.5  ? @linear-gradient(90deg, col2 0%, col1 animated*4 - 1, col1 100%)
+                                : animated < 0.75 ? @linear-gradient(90deg, col2 0%, col2 animated*4 - 2, col1 100%)
+                                :                   @linear-gradient(90deg, col1 0%, col2 animated*4 - 3, col2 100%);
+                }
             }
         }
     }

@@ -150,7 +150,7 @@ async fn cargo_worker_loop(
                 refresh_install_list_future.set(refresh_install_list(handle.clone()).fuse());
                 if let Some(job) = install_queue.pop_front() {
                     currently_installing = job.crate_name().clone();
-                    process_install_future.set(process_install(job).fuse());
+                    process_install_future.set(process_install(job, handle.clone()).fuse());
                 } else {
                     currently_installing = Default::default();
                 }
@@ -238,7 +238,7 @@ async fn cargo_worker_loop(
             Some(CargoMessage::Install(job)) => {
                 if process_install_future.is_terminated() {
                     currently_installing = job.crate_name().clone();
-                    process_install_future.set(process_install(job).fuse());
+                    process_install_future.set(process_install(job, handle.clone()).fuse());
                 } else {
                     install_queue.push_back(job);
                 }
@@ -937,7 +937,7 @@ fn report_error<T: Default>(_handle: sixtyfps::Weak<CargoUI>, arg: &str) -> T {
     Default::default()
 }
 
-async fn process_install(job: InstallJob) -> std::io::Result<()> {
+async fn process_install(job: InstallJob, handle: sixtyfps::Weak<CargoUI>) -> std::io::Result<()> {
     let mut cmd = cargo_command();
     match &job {
         InstallJob::Install(cr) => cmd.arg("install").arg("--force").arg(cr.as_str()),
@@ -952,19 +952,28 @@ async fn process_install(job: InstallJob) -> std::io::Result<()> {
     let mut stdout = BufReader::new(res.stdout.take().unwrap()).lines();
     let mut stderr = BufReader::new(res.stderr.take().unwrap()).lines();
     loop {
-        tokio::select! {
+        let status = tokio::select! {
             line = stderr.next_line() => {
-                let line = if let Some(line) = line? { line } else { break };
-                dbg!({"stderr"; line});
-                /*handle.clone().upgrade_in_event_loop(move |h| {
-                    h.set_status(line.into());
-                });*/
+                if let Some(line) = line? { line } else { break }
+
             }
             line = stdout.next_line() => {
-                let line = if let Some(line) = line? { line } else { break };
-                dbg!({"stdout"; line});
+                if let Some(line) = line? { line } else { break }
             }
-        }
+        };
+        let crate_name = job.crate_name().clone();
+        handle.clone().upgrade_in_event_loop(move |cargo_ui| {
+            let installed = cargo_ui.global::<CargoInstallData>().get_crates();
+            for i in 0..installed.row_count() {
+                let mut c = installed.row_data(i);
+                if c.name == crate_name {
+                    c.progress = true;
+                    c.status = status.into();
+                    installed.set_row_data(i, c);
+                    return;
+                }
+            }
+        });
     }
     Ok(())
 }
@@ -996,5 +1005,8 @@ fn apply_install_list(
             .set_crates(ModelHandle::from(
                 Rc::new(VecModel::from(list)) as Rc<dyn Model<Data = InstalledCrate>>
             ));
+        if ui.global::<CargoInstallData>().get_animated() < 0.01 {
+            ui.global::<CargoInstallData>().set_animated(1.);
+        }
     });
 }

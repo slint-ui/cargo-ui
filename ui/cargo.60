@@ -32,13 +32,7 @@ export BuildingPane := Pane {
     callback back <=> back_btn.clicked;
     property <bool> is-building;
     property status <=> status_text.text;
-    property <[Diag]> diagnostics: [
-        // just some placeholder for testing
-        {short: "Hallo", expanded: "Hello\nworld", level: 1 },
-        {short: "Hallo", expanded: "Hello\nworld", level: 2 },
-        {short: "Hallo", expanded: "Hello\nworld", level: 3 },
-        {short: "Hallo", expanded: "Hello\nworld", level: 0 }
-    ];
+    property <[Diag]> diagnostics;
 
     VerticalBox {
         status_text := Text { }
