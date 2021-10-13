@@ -106,7 +106,12 @@ fn main() {
                     cargo_channel
                         .send(CargoMessage::Install(InstallJob::Install(c.name.clone())))
                         .unwrap();
-                    installed.set_row_data(i, c);
+                    // as_any() to workaround that set_row_data was not implemented in ModelHandle in SixtyFPS 0.1.3
+                    installed
+                        .as_any()
+                        .downcast_ref::<sixtyfps::VecModel<InstalledCrate>>()
+                        .unwrap()
+                        .set_row_data(i, c);
                 }
             }
         }

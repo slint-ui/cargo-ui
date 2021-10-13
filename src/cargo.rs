@@ -969,7 +969,8 @@ async fn process_install(job: InstallJob, handle: sixtyfps::Weak<CargoUI>) -> st
                 if c.name == crate_name {
                     c.progress = true;
                     c.status = status.into();
-                    installed.set_row_data(i, c);
+                    // as_any() to workaround that set_row_data was not implemented in ModelHandle in SixtyFPS 0.1.3
+                    installed.as_any().downcast_ref::<VecModel<InstalledCrate>>().unwrap().set_row_data(i, c);
                     return;
                 }
             }
