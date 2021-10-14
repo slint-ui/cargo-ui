@@ -1010,8 +1010,5 @@ fn apply_install_list(
             .set_crates(ModelHandle::from(
                 Rc::new(VecModel::from(list)) as Rc<dyn Model<Data = InstalledCrate>>
             ));
-        if ui.global::<CargoInstallData>().get_animated() < 0.01 {
-            ui.global::<CargoInstallData>().set_animated(1.);
-        }
     });
 }

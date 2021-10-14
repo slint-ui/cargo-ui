@@ -24,27 +24,35 @@ export global CargoInstallData := {
     callback upgrade(string);
     callback uninstall(string);
     property<[InstalledCrate]> crates;
-    // workaround to get all the progress bar animated
-    property <float> animated;
 }
 
 export CargoInstallView := GridBox {
-    property <float> animated: CargoInstallData.animated;
+
+    // This is kind of a hack to get animated progressbar and have an animation that runs forever
+    property <float> animated : animated-workaround;
     animate animated {
         duration: 2s;
         loop-count: -1;
+    }
+    property <float> animated-workaround; // the indirection is there to workaround a bug in sixtyfps 0.1.3
+    callback ensure-start-animation;
+    ensure-start-animation => {
+        if (animated < 0.001) { animated-workaround = 1; }
     }
 
     Row {
         Text {
             // The animated binding there is a workaround so it fetches it
-            text: "Currently installed packages" + ((animated < -1)?"":"");
+            text: "Currently installed packages";
             horizontal-stretch: 1;
             vertical-alignment: center;
         }
         Button {
             text: "🔄 Upgrade all";
-            clicked => { CargoInstallData.upgrade_all() }
+            clicked => {
+                CargoInstallData.upgrade_all();
+                ensure-start-animation();
+            }
         }
     }
     ListView {
@@ -67,6 +75,7 @@ export CargoInstallView := GridBox {
                     clicked => {
                         crate.queued = true;
                         CargoInstallData.upgrade(crate.name);
+                        ensure-start-animation();
                     }
                 }
                 if !crate.queued : Button {
@@ -74,6 +83,7 @@ export CargoInstallView := GridBox {
                     clicked => {
                         crate.queued = true;
                         CargoInstallData.uninstall(crate.name);
+                        ensure-start-animation();
                     }
                 }
                 if crate.queued: Text {
