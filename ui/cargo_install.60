@@ -7,7 +7,7 @@ import {
     LineEdit, ListView, GroupBox, CheckBox
 } from "sixtyfps_widgets.60";
 
-import { Action } from "cargo.60";
+import { CratesCompletionData } from "crates_completion.60";
 
 export struct InstalledCrate := {
     name: string,
@@ -25,9 +25,6 @@ export global CargoInstallData := {
     callback install(string);
     callback uninstall(string);
     property<[InstalledCrate]> crates;
-    property<[string]> completions;
-    property<int> completion_result; // completions.lenght
-    callback update_completion(string);
 }
 
 export CargoInstallView := GridBox {
@@ -125,10 +122,10 @@ export CargoInstallView := GridBox {
                 completion_shown = false;
             }
             edited => {
-                CargoInstallData.update_completion(text);
+                CratesCompletionData.update_completion(text);
                 completion_shown = text != "";
             }
-            if completion_shown && CargoInstallData.completion_result > 0 : Rectangle {
+            if completion_shown && CratesCompletionData.completion_result > 0 : Rectangle {
                 background: white;
                 y: -height - 6px;
                 height: min(install-le.y - 12px, inner_layout.preferred-height);
@@ -142,7 +139,7 @@ export CargoInstallView := GridBox {
                     y: parent.height - preferred-height;
                     width: 100%;
                     alignment: end;
-                    for crate in CargoInstallData.completions: Rectangle {
+                    for crate in CratesCompletionData.completions: Rectangle {
                         background: inner-touch.has-hover ? lightgray : transparent;
                         height: inner_text.height;
                         inner_text := Text {

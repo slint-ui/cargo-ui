@@ -136,14 +136,16 @@ fn main() {
                 .unwrap()
         }
     });
-    cargo_ui.global::<CargoInstallData>().on_update_completion({
-        let cargo_channel = cargo_worker.channel.clone();
-        move |cpl| {
-            cargo_channel
-                .send(CargoMessage::InstallCompletion(cpl))
-                .unwrap()
-        }
-    });
+    cargo_ui
+        .global::<CratesCompletionData>()
+        .on_update_completion({
+            let cargo_channel = cargo_worker.channel.clone();
+            move |cpl| {
+                cargo_channel
+                    .send(CargoMessage::UpdateCompletion(cpl))
+                    .unwrap()
+            }
+        });
 
     cargo_ui.run();
 

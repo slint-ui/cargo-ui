@@ -3,8 +3,8 @@
  */
 
 use super::{
-    Action, CargoInstallData, CargoUI, DependencyData, DependencyNode, Diag, Feature,
-    InstalledCrate,
+    Action, CargoInstallData, CargoUI, CratesCompletionData, DependencyData, DependencyNode, Diag,
+    Feature, InstalledCrate,
 };
 use anyhow::Context;
 use cargo_metadata::{diagnostic::DiagnosticLevel, Metadata, Node, PackageId, Version};
@@ -57,7 +57,7 @@ pub enum CargoMessage {
     /// Upgrade the dependency `.1` in package `.0`
     DependencyUpgrade(SharedString, SharedString),
     Install(InstallJob),
-    InstallCompletion(SharedString),
+    UpdateCompletion(SharedString),
 }
 
 pub struct CargoWorker {
@@ -247,7 +247,7 @@ async fn cargo_worker_loop(
                     install_queue.push_back(job);
                 }
             }
-            Some(CargoMessage::InstallCompletion(query)) => {
+            Some(CargoMessage::UpdateCompletion(query)) => {
                 if let Some(idx) = crates_index.as_ref() {
                     install_completion_future.set(
                         install_completion(idx.path().to_owned(), query, handle.clone()).fuse(),
@@ -1060,9 +1060,9 @@ async fn install_completion(
         }
     }
     handle.upgrade_in_event_loop(move |ui| {
-        ui.global::<CargoInstallData>()
+        ui.global::<CratesCompletionData>()
             .set_completion_result(result.len() as i32);
-        ui.global::<CargoInstallData>()
+        ui.global::<CratesCompletionData>()
             .set_completions(ModelHandle::from(
                 Rc::new(VecModel::from(result)) as Rc<dyn Model<Data = SharedString>>
             ));

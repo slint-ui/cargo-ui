@@ -14,7 +14,8 @@ import {
 
 import { Toolchain, RustupView } from "rustup.60";
 import { CargoInstallView, InstalledCrate, CargoInstallData } from "cargo_install.60";
-export {DependencyData, DependencyNode, CargoInstallData }
+import { CratesCompletionData } from "crates_completion.60";
+export {DependencyData, DependencyNode, CargoInstallData, CratesCompletionData }
 
 CargoUI := Window {
     title: "Cargo UI";

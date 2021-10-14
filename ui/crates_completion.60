@@ -1,0 +1,9 @@
+/* Copyright © 2021 SixtyFPS GmbH <info@sixtyfps.info>
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ */
+
+export global CratesCompletionData := {
+    property<[string]> completions;
+    property<int> completion_result; // completions.length
+    callback update_completion(string);
+}
