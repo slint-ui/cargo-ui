@@ -7,6 +7,8 @@ import {
     LineEdit, ListView, GroupBox, CheckBox
 } from "sixtyfps_widgets.60";
 
+import { CratesCompletionData } from "crates_completion.60";
+
 export struct Diag := {
     short: string,
     expanded: string,
@@ -105,15 +107,76 @@ export global DependencyData := {
     callback request_upgrade(string, string);
     // the parameter is the parent_package and the crate_name
     callback remove(string, string);
+    callback add_dependency(string);
+    // whether the "add dependency" field should be enabled
+    property <bool> package-selected : true;
 }
 
 DepTreePane := Pane {
     callback back <=> back_btn.clicked;
 
     property <[DependencyNode]> model: DependencyData.model;
+    property <bool> completion_shown;
 
-    VerticalBox {
+    GridBox {
+        Row {
+            install-le := LineEdit {
+                z: 1; // put on top because of the completion
+                enabled: DependencyData.package-selected;
+                placeholder-text: DependencyData.package-selected ? "Dependency to add" : "Select a package to add a dependency";
+                accepted(text) => {
+                    DependencyData.add-dependency(install-le.text);
+                    self.text = "";
+                    completion_shown = false;
+                }
+                edited => {
+                    CratesCompletionData.update_completion(text);
+                    completion_shown = text != "";
+                }
+                if completion_shown && CratesCompletionData.completion_result > 0 :
+                Rectangle {
+                    background: white;
+                    y: parent.height + 6px;
+                    height: min(root.height - install-le.y - install-le.height - 12px, inner_layout.preferred-height);
+                    drop-shadow-color: #8888;
+                    drop-shadow-offset-x: 1px;
+                    drop-shadow-offset-y: 1px;
+                    drop-shadow-blur: 5px;
+                    border-radius: 5px;
+                    clip: true;
+                    inner_layout := VerticalBox {
+                        width: 100%;
+                        alignment: end;
+                        for crate in CratesCompletionData.completions: Rectangle {
+                            background: inner-touch.has-hover ? lightgray : transparent;
+                            height: inner_text.height;
+                            inner_text := Text {
+                                width: 100%;
+                                text: crate;
+                                color: black;
+                                overflow: elide;
+                            }
+                            inner_touch := TouchArea {
+                                clicked => {
+                                    install-le.text = crate;
+                                    completion_shown = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Button {
+                text: "➕ Add";
+                clicked => {
+                    DependencyData.add-dependency(install-le.text);
+                    install-le.text = "";
+                    completion_shown = false;
+                }
+            }
+        }
         ListView {
+            colspan: 2;
             for dep in model : HorizontalLayout {
                 width: preferred-width;
                 spacing: 5px;
@@ -157,9 +220,9 @@ DepTreePane := Pane {
                 }
             }
         }
-        HorizontalBox {
-            alignment: end;
+        Row {
             back_btn:=Button {
+                col: 1;
                 text: "🔙 Back";
             }
         }

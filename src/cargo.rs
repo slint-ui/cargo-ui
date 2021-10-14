@@ -56,6 +56,7 @@ pub enum CargoMessage {
     DependencyRemove(SharedString, SharedString),
     /// Upgrade the dependency `.1` in package `.0`
     DependencyUpgrade(SharedString, SharedString),
+    DependencyAdd(SharedString),
     Install(InstallJob),
     UpdateCompletion(SharedString),
 }
@@ -211,6 +212,34 @@ async fn cargo_worker_loop(
                             dbg!(e);
                             handle.clone().upgrade_in_event_loop(|h| {
                                 h.set_status("Not yet supported".into());
+                            });
+                        }
+                    }
+                }
+            }
+            Some(CargoMessage::DependencyAdd(dep)) => {
+                if let Some((pkg, cr)) = metadata
+                    .as_ref()
+                    .and_then(|metadata| {
+                        let pkg = package.as_str();
+                        if pkg.is_empty() {
+                            Some(&metadata[metadata.workspace_members.first()?])
+                        } else {
+                            metadata.packages.iter().find(|p| p.name == pkg)
+                        }
+                    })
+                    .and_then(|p| Some((p, crates_index.as_ref()?.crate_(&dep)?)))
+                {
+                    match dependency_add(
+                        pkg.manifest_path.as_ref(),
+                        dep.as_str(),
+                        cr.latest_version().version(),
+                    ) {
+                        Ok(()) => read_metadata_future
+                            .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
+                        Err(e) => {
+                            handle.clone().upgrade_in_event_loop(move |h| {
+                                h.set_status(format!("{}", e).into());
                             });
                         }
                     }
@@ -552,6 +581,8 @@ fn apply_metadata(
     }
     let pkg = package.clone();
     handle.clone().upgrade_in_event_loop(move |h| {
+        h.global::<DependencyData>()
+            .set_package_selected(!is_workspace || !pkg.is_empty());
         h.set_current_package(pkg);
         // The model always has at least two entries, one for all and the first package,
         // so enable multi-package selection only if there is something else to select.
@@ -882,6 +913,25 @@ fn dependency_upgrade_to_version(
     } else {
         anyhow::bail!("Could not understand the manifest");
     }
+    std::fs::write(pkg, document.to_string().as_bytes())
+        .with_context(|| format!("Failed to write '{}'", pkg.display()))
+}
+
+fn dependency_add(pkg: &Path, dependency: &str, version: &str) -> anyhow::Result<()> {
+    let manifest_contents = std::fs::read_to_string(pkg)
+        .with_context(|| format!("Failed to load '{}'", pkg.display()))?;
+    let mut document: toml_edit::Document = manifest_contents.parse()?;
+    // FIXME: we need to do it also for dev-dependencies and build-dependencies
+    let tbl = &mut document["dependencies"].or_insert(toml_edit::table());
+    if !tbl.is_table_like() {
+        anyhow::bail!("[dependencies] not a table");
+    }
+    let dep = &mut tbl[dependency];
+    if !dep.is_none() {
+        anyhow::bail!("{} is already a dependency", dependency);
+    }
+    *dep = toml_edit::Item::Value(version.into());
+
     std::fs::write(pkg, document.to_string().as_bytes())
         .with_context(|| format!("Failed to write '{}'", pkg.display()))
 }

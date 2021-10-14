@@ -78,6 +78,14 @@ fn main() {
                 .unwrap()
         }
     });
+    cargo_ui.global::<DependencyData>().on_add_dependency({
+        let cargo_channel = cargo_worker.channel.clone();
+        move |dep| {
+            cargo_channel
+                .send(CargoMessage::DependencyAdd(dep))
+                .unwrap()
+        }
+    });
     cargo_ui.global::<CargoInstallData>().on_upgrade({
         let cargo_channel = cargo_worker.channel.clone();
         move |c| {
