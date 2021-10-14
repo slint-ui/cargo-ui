@@ -116,6 +116,34 @@ fn main() {
             }
         }
     });
+    cargo_ui.global::<CargoInstallData>().on_install({
+        let cargo_channel = cargo_worker.channel.clone();
+        let cargo_ui = cargo_ui.as_weak();
+        move |c| {
+            let installed = cargo_ui.unwrap().global::<CargoInstallData>().get_crates();
+            if let Some(installed) = installed
+                .as_any()
+                .downcast_ref::<sixtyfps::VecModel<InstalledCrate>>()
+            {
+                installed.push(InstalledCrate {
+                    name: c.clone(),
+                    queued: true,
+                    ..Default::default()
+                });
+            }
+            cargo_channel
+                .send(CargoMessage::Install(InstallJob::Install(c)))
+                .unwrap()
+        }
+    });
+    cargo_ui.global::<CargoInstallData>().on_update_completion({
+        let cargo_channel = cargo_worker.channel.clone();
+        move |cpl| {
+            cargo_channel
+                .send(CargoMessage::InstallCompletion(cpl))
+                .unwrap()
+        }
+    });
 
     cargo_ui.run();
 

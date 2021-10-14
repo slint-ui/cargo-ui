@@ -22,11 +22,17 @@ export struct InstalledCrate := {
 export global CargoInstallData := {
     callback upgrade_all();
     callback upgrade(string);
+    callback install(string);
     callback uninstall(string);
     property<[InstalledCrate]> crates;
+    property<[string]> completions;
+    property<int> completion_result; // completions.lenght
+    callback update_completion(string);
 }
 
 export CargoInstallView := GridBox {
+
+    property <bool> completion_shown;
 
     // This is kind of a hack to get animated progressbar and have an animation that runs forever
     property <float> animated : animated-workaround;
@@ -106,6 +112,76 @@ export CargoInstallView := GridBox {
                                 : animated < 0.75 ? @linear-gradient(90deg, col2 0%, col2 animated*4 - 2, col1 100%)
                                 :                   @linear-gradient(90deg, col1 0%, col2 animated*4 - 3, col2 100%);
                 }
+            }
+        }
+    }
+    Row {
+        install-le := LineEdit {
+            placeholder-text: "Package to install";
+            accepted(text) => {
+                CargoInstallData.install(install-le.text);
+                ensure-start-animation();
+                self.text = "";
+                completion_shown = false;
+            }
+            edited => {
+                CargoInstallData.update_completion(text);
+                completion_shown = text != "";
+            }
+            if completion_shown && CargoInstallData.completion_result > 0 : Rectangle {
+                background: white;
+                y: -height - 6px;
+                height: min(install-le.y - 12px, inner_layout.preferred-height);
+                drop-shadow-color: #8888;
+                drop-shadow-offset-x: 1px;
+                drop-shadow-offset-y: 1px;
+                drop-shadow-blur: 5px;
+                border-radius: 5px;
+                clip: true;
+                inner_layout := VerticalBox {
+                    y: parent.height - preferred-height;
+                    width: 100%;
+                    alignment: end;
+                    for crate in CargoInstallData.completions: Rectangle {
+                        background: inner-touch.has-hover ? lightgray : transparent;
+                        height: inner_text.height;
+                        inner_text := Text {
+                            width: 100%;
+                            text: crate;
+                            color: black;
+                            overflow: elide;
+                        }
+                        inner_touch := TouchArea {
+                            clicked => {
+                                install-le.text = crate;
+                                completion_shown = false;
+                            }
+                        }
+                    }
+                }
+            }
+            /*completion := PopupWindow {
+                height: install-le.y - 12px;
+                y: - install-le.y - 6px;
+                width: parent.width;
+
+                Rectangle {
+                    background: white;
+                    drop-shadow-color: #8888;
+                    drop-shadow-offset-x: 1px;
+                    drop-shadow-offset-y: 1px;
+                    drop-shadow-blur: 5px;
+                    border-radius: 5px;
+                }
+            }*/
+        }
+        Button {
+            text: "📀 Install";
+            clicked => {
+                CargoInstallData.install(install-le.text);
+                ensure-start-animation();
+                install-le.text = "";
+                completion_shown = false;
             }
         }
     }

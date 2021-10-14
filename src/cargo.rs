@@ -57,6 +57,7 @@ pub enum CargoMessage {
     /// Upgrade the dependency `.1` in package `.0`
     DependencyUpgrade(SharedString, SharedString),
     Install(InstallJob),
+    InstallCompletion(SharedString),
 }
 
 pub struct CargoWorker {
@@ -103,6 +104,7 @@ async fn cargo_worker_loop(
     let run_cargo_future = Fuse::terminated();
     let read_metadata_future = read_metadata(manifest.clone(), handle.clone()).fuse();
     let load_crate_index_future = load_crate_index().fuse();
+    let install_completion_future = Fuse::terminated();
     let refresh_install_list_future = refresh_install_list(handle.clone()).fuse();
     let process_install_future = Fuse::terminated();
     futures::pin_mut!(
@@ -111,6 +113,7 @@ async fn cargo_worker_loop(
         load_crate_index_future,
         refresh_install_list_future,
         process_install_future,
+        install_completion_future,
     );
     loop {
         let m = futures::select! {
@@ -156,6 +159,7 @@ async fn cargo_worker_loop(
                 }
                 continue;
             }
+            _ = install_completion_future => { continue; }
             m = r.recv().fuse() => {
                 m
             }
@@ -241,6 +245,13 @@ async fn cargo_worker_loop(
                     process_install_future.set(process_install(job, handle.clone()).fuse());
                 } else {
                     install_queue.push_back(job);
+                }
+            }
+            Some(CargoMessage::InstallCompletion(query)) => {
+                if let Some(idx) = crates_index.as_ref() {
+                    install_completion_future.set(
+                        install_completion(idx.path().to_owned(), query, handle.clone()).fuse(),
+                    );
                 }
             }
         }
@@ -987,12 +998,15 @@ fn apply_install_list(
     mut list: Vec<InstalledCrate>,
     crates_index: Option<&crates_index::Index>,
     install_queue: &VecDeque<InstallJob>,
-    currently_installing: &str,
+    currently_installing: &SharedString,
     handle: sixtyfps::Weak<CargoUI>,
 ) {
-    let set: HashSet<_> = install_queue.iter().map(|ci| ci.crate_name()).collect();
+    let mut set: HashSet<_> = install_queue.iter().map(|ci| ci.crate_name()).collect();
+    if !currently_installing.is_empty() {
+        set.insert(currently_installing);
+    }
     for cr in list.iter_mut() {
-        cr.queued = set.contains(&cr.name) || cr.name == currently_installing;
+        cr.queued = set.remove(&cr.name);
         cr.new_version = crates_index
             .and_then(|idx| idx.crate_(&cr.name))
             .and_then(|from_idx| {
@@ -1004,11 +1018,53 @@ fn apply_install_list(
             })
             .unwrap_or_default();
     }
+    for cr in set {
+        list.push(InstalledCrate {
+            name: cr.clone(),
+            queued: true,
+            ..Default::default()
+        })
+    }
 
     handle.upgrade_in_event_loop(move |ui| {
         ui.global::<CargoInstallData>()
             .set_crates(ModelHandle::from(
                 Rc::new(VecModel::from(list)) as Rc<dyn Model<Data = InstalledCrate>>
+            ));
+    });
+}
+
+async fn install_completion(
+    mut idx_path: PathBuf,
+    query: SharedString,
+    handle: sixtyfps::Weak<CargoUI>,
+) {
+    let mut result = Vec::<SharedString>::new();
+    if query.len() > 3 && query.is_ascii() {
+        // `crates_index` does not allow to make search in a reasonable time, so I had to implement that myself
+        // This only handle crates that have 4 or more characters
+        idx_path.push(&query[0..2]);
+        idx_path.push(&query[2..4]);
+        if let Ok(mut rd) = tokio::fs::read_dir(idx_path).await {
+            while let Ok(Some(entry)) = rd.next_entry().await {
+                if let Some(name) = entry.file_name().to_str() {
+                    if name.starts_with(query.as_str()) {
+                        result.push(name.into());
+                        if result.len() > 50 {
+                            // no need to put too many crate in the search result
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    handle.upgrade_in_event_loop(move |ui| {
+        ui.global::<CargoInstallData>()
+            .set_completion_result(result.len() as i32);
+        ui.global::<CargoInstallData>()
+            .set_completions(ModelHandle::from(
+                Rc::new(VecModel::from(result)) as Rc<dyn Model<Data = SharedString>>
             ));
     });
 }
