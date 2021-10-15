@@ -162,32 +162,34 @@ async fn cargo_worker_loop(
             }
             _ = install_completion_future => { continue; }
             m = r.recv().fuse() => {
-                m
+                match m {
+                    None => return Ok(()),
+                    Some(m) => m,
+                }
             }
         };
 
         match m {
-            None => return Ok(()),
-            Some(CargoMessage::Quit) => return Ok(()),
-            Some(CargoMessage::Action {
+            CargoMessage::Quit => return Ok(()),
+            CargoMessage::Action {
                 action,
                 feature_settings,
-            }) => run_cargo_future
+            } => run_cargo_future
                 .set(run_cargo(action, feature_settings, manifest.clone(), handle.clone()).fuse()),
-            Some(CargoMessage::Cancel) => {
+            CargoMessage::Cancel => {
                 run_cargo_future.set(Fuse::terminated());
             }
-            Some(CargoMessage::ReloadManifest(m)) => {
+            CargoMessage::ReloadManifest(m) => {
                 manifest = PathBuf::from(m.as_str()).into();
                 update_features = true;
                 read_metadata_future.set(read_metadata(manifest.clone(), handle.clone()).fuse());
             }
-            Some(CargoMessage::ShowOpenDialog) => {
+            CargoMessage::ShowOpenDialog => {
                 manifest = show_open_dialog(manifest);
                 update_features = true;
                 read_metadata_future.set(read_metadata(manifest.clone(), handle.clone()).fuse());
             }
-            Some(CargoMessage::PackageSelected(pkg)) => {
+            CargoMessage::PackageSelected(pkg) => {
                 package = pkg;
                 if let Some(metadata) = &metadata {
                     apply_metadata(
@@ -199,7 +201,7 @@ async fn cargo_worker_loop(
                     );
                 }
             }
-            Some(CargoMessage::DependencyRemove(pkg, dep)) => {
+            CargoMessage::DependencyRemove(pkg, dep) => {
                 let pkg = PackageId { repr: pkg.into() };
                 if let Some(pkg) = metadata
                     .as_ref()
@@ -217,7 +219,7 @@ async fn cargo_worker_loop(
                     }
                 }
             }
-            Some(CargoMessage::DependencyAdd(dep)) => {
+            CargoMessage::DependencyAdd(dep) => {
                 if let Some((pkg, cr)) = metadata
                     .as_ref()
                     .and_then(|metadata| {
@@ -245,7 +247,7 @@ async fn cargo_worker_loop(
                     }
                 }
             }
-            Some(CargoMessage::DependencyUpgrade(pkg, dep)) => {
+            CargoMessage::DependencyUpgrade(pkg, dep) => {
                 let pkg = PackageId { repr: pkg.into() };
                 if let Some((pkg, cr)) = metadata
                     .as_ref()
@@ -268,7 +270,7 @@ async fn cargo_worker_loop(
                     }
                 }
             }
-            Some(CargoMessage::Install(job)) => {
+            CargoMessage::Install(job) => {
                 if process_install_future.is_terminated() {
                     currently_installing = job.crate_name().clone();
                     process_install_future.set(process_install(job, handle.clone()).fuse());
@@ -276,7 +278,7 @@ async fn cargo_worker_loop(
                     install_queue.push_back(job);
                 }
             }
-            Some(CargoMessage::UpdateCompletion(query)) => {
+            CargoMessage::UpdateCompletion(query) => {
                 if let Some(idx) = crates_index.as_ref() {
                     install_completion_future.set(
                         install_completion(idx.path().to_owned(), query, handle.clone()).fuse(),
