@@ -103,11 +103,12 @@ export struct DependencyNode := {
 
 export global DependencyData := {
     property <[DependencyNode]> model;
-    // the parameter is the parent_package and the crate_name
-    callback request_upgrade(string, string);
-    // the parameter is the parent_package and the crate_name
-    callback remove(string, string);
-    callback add_dependency(string);
+    // the parameter is the parent_package and the crate_name, and the dependency type
+    callback request_upgrade(string, string, string);
+    // the parameter is the parent_package and the crate_name, and the dependency type
+    callback remove(string, string, string);
+    // crate name, and dependency type
+    callback add_dependency(string, string);
     // whether the "add dependency" field should be enabled
     property <bool> package-selected : true;
 }
@@ -125,7 +126,7 @@ DepTreePane := Pane {
                 enabled: DependencyData.package-selected;
                 placeholder-text: DependencyData.package-selected ? "Dependency to add" : "Select a package to add a dependency";
                 accepted(text) => {
-                    DependencyData.add-dependency(install-le.text);
+                    DependencyData.add-dependency(install-le.text, "");
                     self.text = "";
                     completion_shown = false;
                 }
@@ -169,7 +170,7 @@ DepTreePane := Pane {
             Button {
                 text: "➕ Add";
                 clicked => {
-                    DependencyData.add-dependency(install-le.text);
+                    DependencyData.add-dependency(install-le.text, "");
                     install-le.text = "";
                     completion_shown = false;
                 }
@@ -209,12 +210,12 @@ DepTreePane := Pane {
                     vertical-alignment: center;
                 }
                 if (dep.outdated && dep.indentation == 1) : Button {
-                    clicked => { DependencyData.request_upgrade(dep.parent_package, dep.crate_name); }
+                    clicked => { DependencyData.request_upgrade(dep.parent_package, dep.crate_name, dep.dep_kind); }
                     text: "🔄 Upgrade";
                     min-height: crate_name.preferred_height * 1.25;
                 }
                 if (dep.indentation == 1) : Button {
-                    clicked => { DependencyData.remove(dep.parent_package, dep.crate_name); }
+                    clicked => { DependencyData.remove(dep.parent_package, dep.crate_name, dep.dep_kind); }
                     text: "🗑️ Remove";
                     min-height: crate_name.preferred_height * 1.25;
                 }

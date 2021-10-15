@@ -7,6 +7,7 @@
 mod generated_code {
     sixtyfps::include_modules!();
 }
+use cargo_metadata::DependencyKind;
 pub use generated_code::*;
 
 mod cargo;
@@ -66,25 +67,36 @@ fn main() {
 
     cargo_ui.global::<DependencyData>().on_remove({
         let cargo_channel = cargo_worker.channel.clone();
-        move |pkg, dep| {
+        move |pkg, dep, dep_kind| {
             cargo_channel
-                .send(CargoMessage::DependencyRemove(pkg, dep))
+                .send(CargoMessage::DependencyRemove {
+                    parent_package: pkg,
+                    crate_name: dep,
+                    dep_kind: dep_kind_from_str(dep_kind),
+                })
                 .unwrap()
         }
     });
     cargo_ui.global::<DependencyData>().on_request_upgrade({
         let cargo_channel = cargo_worker.channel.clone();
-        move |pkg, dep| {
+        move |pkg, dep, dep_kind| {
             cargo_channel
-                .send(CargoMessage::DependencyUpgrade(pkg, dep))
+                .send(CargoMessage::DependencyUpgrade {
+                    parent_package: pkg,
+                    crate_name: dep,
+                    dep_kind: dep_kind_from_str(dep_kind),
+                })
                 .unwrap()
         }
     });
     cargo_ui.global::<DependencyData>().on_add_dependency({
         let cargo_channel = cargo_worker.channel.clone();
-        move |dep| {
+        move |dep, dep_kind| {
             cargo_channel
-                .send(CargoMessage::DependencyAdd(dep))
+                .send(CargoMessage::DependencyAdd {
+                    crate_name: dep,
+                    dep_kind: dep_kind_from_str(dep_kind),
+                })
                 .unwrap()
         }
     });
@@ -161,4 +173,12 @@ fn main() {
 
     cargo_worker.join().unwrap();
     rustup_worker.join().unwrap();
+}
+
+fn dep_kind_from_str(dep_kind: sixtyfps::SharedString) -> DependencyKind {
+    match dep_kind.as_str() {
+        "dev" => DependencyKind::Development,
+        "build" => DependencyKind::Build,
+        _ => DependencyKind::Normal,
+    }
 }

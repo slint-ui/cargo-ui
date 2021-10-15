@@ -4,7 +4,9 @@
 
 use super::{Action, CargoUI, CratesCompletionData, DependencyData, DependencyNode, Diag, Feature};
 use anyhow::Context;
-use cargo_metadata::{diagnostic::DiagnosticLevel, Metadata, Node, PackageId, Version};
+use cargo_metadata::{
+    diagnostic::DiagnosticLevel, DependencyKind, Metadata, Node, PackageId, Version,
+};
 use futures::future::{Fuse, FusedFuture, FutureExt};
 use itertools::Itertools;
 use serde::Deserialize;
@@ -35,10 +37,21 @@ pub enum CargoMessage {
     ShowOpenDialog,
     Cancel,
     /// Remove the dependency `.1` from package `.0`
-    DependencyRemove(SharedString, SharedString),
+    DependencyRemove {
+        parent_package: SharedString,
+        crate_name: SharedString,
+        dep_kind: DependencyKind,
+    },
     /// Upgrade the dependency `.1` in package `.0`
-    DependencyUpgrade(SharedString, SharedString),
-    DependencyAdd(SharedString),
+    DependencyUpgrade {
+        parent_package: SharedString,
+        crate_name: SharedString,
+        dep_kind: DependencyKind,
+    },
+    DependencyAdd {
+        crate_name: SharedString,
+        dep_kind: DependencyKind,
+    },
     Install(InstallJob),
     UpdateCompletion(SharedString),
 }
@@ -183,13 +196,23 @@ async fn cargo_worker_loop(
                     );
                 }
             }
-            CargoMessage::DependencyRemove(pkg, dep) => {
-                let pkg = PackageId { repr: pkg.into() };
+            CargoMessage::DependencyRemove {
+                parent_package,
+                crate_name,
+                dep_kind,
+            } => {
+                let pkg = PackageId {
+                    repr: parent_package.into(),
+                };
                 if let Some(pkg) = metadata
                     .as_ref()
                     .and_then(|metadata| metadata.packages.iter().find(|p| p.id == pkg))
                 {
-                    match dependency_remove(pkg.manifest_path.as_ref(), dep.as_str()) {
+                    match dependency_remove(
+                        pkg.manifest_path.as_ref(),
+                        crate_name.as_str(),
+                        dep_kind,
+                    ) {
                         Ok(()) => read_metadata_future
                             .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
                         Err(e) => {
@@ -201,7 +224,10 @@ async fn cargo_worker_loop(
                     }
                 }
             }
-            CargoMessage::DependencyAdd(dep) => {
+            CargoMessage::DependencyAdd {
+                crate_name,
+                dep_kind,
+            } => {
                 if let Some((pkg, cr)) = metadata
                     .as_ref()
                     .and_then(|metadata| {
@@ -212,12 +238,15 @@ async fn cargo_worker_loop(
                             metadata.packages.iter().find(|p| p.name == pkg)
                         }
                     })
-                    .and_then(|p| Some((p, crates_index.as_ref()?.crate_(&dep)?)))
+                    .and_then(|p| Some((p, crates_index.as_ref()?.crate_(&crate_name)?)))
                 {
                     match dependency_add(
                         pkg.manifest_path.as_ref(),
-                        dep.as_str(),
-                        cr.latest_version().version(),
+                        crate_name.as_str(),
+                        cr.highest_stable_version()
+                            .unwrap_or(cr.highest_version())
+                            .version(),
+                        dep_kind,
                     ) {
                         Ok(()) => read_metadata_future
                             .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
@@ -229,17 +258,26 @@ async fn cargo_worker_loop(
                     }
                 }
             }
-            CargoMessage::DependencyUpgrade(pkg, dep) => {
-                let pkg = PackageId { repr: pkg.into() };
+            CargoMessage::DependencyUpgrade {
+                parent_package,
+                crate_name,
+                dep_kind,
+            } => {
+                let pkg = PackageId {
+                    repr: parent_package.into(),
+                };
                 if let Some((pkg, cr)) = metadata
                     .as_ref()
                     .and_then(|metadata| metadata.packages.iter().find(|p| p.id == pkg))
-                    .and_then(|p| Some((p, crates_index.as_ref()?.crate_(&dep)?)))
+                    .and_then(|p| Some((p, crates_index.as_ref()?.crate_(&crate_name)?)))
                 {
                     match dependency_upgrade_to_version(
                         pkg.manifest_path.as_ref(),
-                        dep.as_str(),
-                        cr.latest_version().version(),
+                        crate_name.as_str(),
+                        cr.highest_stable_version()
+                            .unwrap_or(cr.highest_version())
+                            .version(),
+                        dep_kind,
                     ) {
                         Ok(()) => read_metadata_future
                             .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
@@ -863,15 +901,23 @@ impl FeatureSettings {
     }
 }
 
-fn dependency_remove(pkg: &Path, dependency: &str) -> anyhow::Result<()> {
+fn to_table_name(dep_kind: DependencyKind) -> &'static str {
+    match dep_kind {
+        DependencyKind::Development => "dev-dependencies",
+        DependencyKind::Build => "build-dependencies",
+        _ => "dependencies",
+    }
+}
+
+fn dependency_remove(pkg: &Path, dependency: &str, dep_kind: DependencyKind) -> anyhow::Result<()> {
     let manifest_contents = std::fs::read_to_string(pkg)
         .with_context(|| format!("Failed to load '{}'", pkg.display()))?;
     let mut document: toml_edit::Document = manifest_contents.parse()?;
-    // FIXME: we need to do it also for dev-dependencies and build-dependencies
-    let dependencies = &mut document["dependencies"];
+    let table_name = to_table_name(dep_kind);
+    let dependencies = &mut document[table_name];
     let removed = !std::mem::take(&mut dependencies[dependency]).is_none();
     if !removed {
-        anyhow::bail!("'{}' was not in [dependencies]", dependency);
+        anyhow::bail!("'{}' was not in [{}]", dependency, dep_kind);
     }
     std::fs::write(pkg, document.to_string().as_bytes())
         .with_context(|| format!("Failed to write '{}'", pkg.display()))
@@ -881,14 +927,15 @@ fn dependency_upgrade_to_version(
     pkg: &Path,
     dependency: &str,
     version: &str,
+    dep_kind: DependencyKind,
 ) -> anyhow::Result<()> {
     let manifest_contents = std::fs::read_to_string(pkg)
         .with_context(|| format!("Failed to load '{}'", pkg.display()))?;
     let mut document: toml_edit::Document = manifest_contents.parse()?;
-    // FIXME: we need to do it also for dev-dependencies and build-dependencies
-    let dep = &mut document["dependencies"][dependency];
+    let table_name = to_table_name(dep_kind);
+    let dep = &mut document[table_name][dependency];
     if dep.is_none() {
-        anyhow::bail!("'{}' was not in [dependencies]", dependency);
+        anyhow::bail!("'{}' was not in [{}]", dependency, dep_kind);
     }
     if dep.is_str() {
         *dep = toml_edit::Item::Value(version.into());
@@ -901,14 +948,19 @@ fn dependency_upgrade_to_version(
         .with_context(|| format!("Failed to write '{}'", pkg.display()))
 }
 
-fn dependency_add(pkg: &Path, dependency: &str, version: &str) -> anyhow::Result<()> {
+fn dependency_add(
+    pkg: &Path,
+    dependency: &str,
+    version: &str,
+    dep_kind: DependencyKind,
+) -> anyhow::Result<()> {
     let manifest_contents = std::fs::read_to_string(pkg)
         .with_context(|| format!("Failed to load '{}'", pkg.display()))?;
     let mut document: toml_edit::Document = manifest_contents.parse()?;
-    // FIXME: we need to do it also for dev-dependencies and build-dependencies
-    let tbl = &mut document["dependencies"].or_insert(toml_edit::table());
+    let table_name = to_table_name(dep_kind);
+    let tbl = &mut document[table_name].or_insert(toml_edit::table());
     if !tbl.is_table_like() {
-        anyhow::bail!("[dependencies] not a table");
+        anyhow::bail!("[{}] not a table", table_name);
     }
     let dep = &mut tbl[dependency];
     if !dep.is_none() {
