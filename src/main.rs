@@ -10,17 +10,19 @@ mod generated_code {
 pub use generated_code::*;
 
 mod cargo;
-use cargo::*;
+mod install;
 mod rustup;
-use rustup::*;
 
+use install::InstallJob;
 use sixtyfps::Model;
+
+use crate::cargo::{CargoMessage, FeatureSettings};
 
 fn main() {
     let cargo_ui = CargoUI::new();
 
-    let cargo_worker = CargoWorker::new(&cargo_ui);
-    let rustup_worker = RustupWorker::new(&cargo_ui);
+    let cargo_worker = cargo::CargoWorker::new(&cargo_ui);
+    let rustup_worker = rustup::RustupWorker::new(&cargo_ui);
 
     cargo_ui.on_open_url(|url| {
         open::that_in_background(url.as_str());
