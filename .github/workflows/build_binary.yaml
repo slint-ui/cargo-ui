@@ -67,14 +67,14 @@ jobs:
         with:
             command: build
             args: --verbose --target ${{ inputs.rust_target }} --release
-      - id: binary-name
-        if: matrix.os != 'windows-latest'
+      - id: binary-name        
         run: |
-          echo "::set-output name=binary-name::cargo-ui"
-      - id: binary-name
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo "::set-output name=binary-name::cargo-ui.exe"
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            echo "::set-output name=binary-name::cargo-ui.exe"
+          else
+            echo "::set-output name=binary-name::cargo-ui"
+          fi
+        shell: bash
       - name: Create artifact directory
         run: |
             mkdir bin
