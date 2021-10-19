@@ -39,7 +39,7 @@ on:
 jobs:
   build_cargo_ui_binary:
     name: Build a single cargo-ui binary
-    runs-on: ${{ inputs.host_os }}
+    runs-on: ${{ github.event.inputs.host_os }}
     steps:
       - uses: actions/checkout@v2
       - name: Install latest stable Rust
