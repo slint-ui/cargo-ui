@@ -46,7 +46,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: ${{ inputs.rust_target }}
+          target: ${{ github.event.inputs.rust_target }}
       - name: Cache Qt
         id: cache-qt
         uses: actions/cache@v2
@@ -66,7 +66,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: build
-            args: --verbose --target ${{ inputs.rust_target }} --release
+            args: --verbose --target ${{ github.event.inputs.rust_target }} --release
       - id: binary-name        
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
@@ -78,11 +78,11 @@ jobs:
       - name: Create artifact directory
         run: |
             mkdir bin
-            cp target/${{ inputs.rust_target }}/release/${{ steps.binary-name.outputs.binary-name }} bin/${{ steps.binary-name.outputs.binary-name }}
+            cp target/${{ github.event.inputs.rust_target }}/release/${{ steps.binary-name.outputs.binary-name }} bin/${{ steps.binary-name.outputs.binary-name }}
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-            name: ${{ inputs.artifact_name }}
+            name: ${{ github.event.inputs.artifact_name }}
             path: |
                 bin
 
