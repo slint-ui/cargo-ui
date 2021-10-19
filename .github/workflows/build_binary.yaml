@@ -1,0 +1,88 @@
+name: Build cargo-ui binary
+
+on:
+  workflow_dispatch:
+    inputs:
+      host_os:
+        description: "GH actions host os name (ubuntu-latest, etc.)"
+        default: "ubuntu-latest"
+        required: false
+        type: string
+      rust_target:
+        description: "Rust target triple (x86_64-unknown-linux-gnu, etc.)"
+        default: "x86_64-unknown-linux-gnu"
+        required: false
+        type: string      
+      artifact_name:
+        description: "Name of the GH action artifact to upload"
+        default: "cargo-ui-linux"
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      host_os:
+        description: "GH actions host os name (ubuntu-latest, etc.)"
+        default: "ubuntu-latest"
+        required: false
+        type: string
+      rust_target:
+        description: "Rust target triple (x86_64-unknown-linux-gnu, etc.)"
+        default: "x86_64-unknown-linux-gnu"
+        required: false
+        type: string      
+      artifact_name:
+        description: "Name of the GH action artifact to upload"
+        default: "cargo-ui-linux"
+        required: false
+        type: string
+
+jobs:
+  build_cargo_ui_binary:
+    name: Build a single cargo-ui binary
+    runs-on: ${{ inputs.host_os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install latest stable Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ inputs.rust_target }}
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v2
+        with:
+          path: ~/work/sixtyfps/Qt
+          key: ${{ runner.os }}-${{ github.job }}-Qt5.15.2
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '5.15.2'
+          cached: ${{ steps.cache-qt.outputs.cache-hit }}
+      - name: Set default style
+        if: matrix.os != 'windows-latest'
+        run: |
+            echo "SIXTYFPS_STYLE=native" >> $GITHUB_ENV
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+            command: build
+            args: --verbose --target ${{ inputs.rust_target }} --release
+      - id: binary-name
+        if: matrix.os != 'windows-latest'
+        run: |
+          echo "::set-output name=binary-name::cargo-ui"
+      - id: binary-name
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "::set-output name=binary-name::cargo-ui.exe"
+      - name: Create artifact directory
+        run: |
+            mkdir bin
+            cp target/${{ inputs.rust_target }}/release/${{ steps.binary-name.outputs.binary-name }} bin/${{ steps.binary-name.outputs.binary-name }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+            name: ${{ inputs.artifact_name }}
+            path: |
+                bin
+
