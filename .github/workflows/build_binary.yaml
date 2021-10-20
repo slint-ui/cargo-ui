@@ -2,104 +2,135 @@ name: Build cargo-ui binary
 
 on:
   workflow_dispatch:
-    inputs:
-      host_os:
-        description: "GH actions host os name (ubuntu-latest, etc.)"
-        default: "ubuntu-latest"
-        required: false
-        type: string
-      rust_target:
-        description: "Rust target triple (x86_64-unknown-linux-gnu, etc.)"
-        default: "x86_64-unknown-linux-gnu"
-        required: false
-        type: string      
-      artifact_name:
-        description: "Name of the GH action artifact to upload"
-        default: "cargo-ui-linux"
-        required: false
-        type: string
-      qt_version:
-        description: "Qt version to install"
-        default: "5.15.2"
-        required: false
-        type: string
-  workflow_call:
-    inputs:
-      host_os:
-        description: "GH actions host os name (ubuntu-latest, etc.)"
-        default: "ubuntu-latest"
-        required: false
-        type: string
-      rust_target:
-        description: "Rust target triple (x86_64-unknown-linux-gnu, etc.)"
-        default: "x86_64-unknown-linux-gnu"
-        required: false
-        type: string      
-      artifact_name:
-        description: "Name of the GH action artifact to upload"
-        default: "cargo-ui-linux"
-        required: false
-        type: string
-      qt_version:
-        description: "Qt version to install"
-        default: "5.15.2"
-        required: false
-        type: string
 
 jobs:
-  build_cargo_ui_binary:
-    name: Build a single cargo-ui binary
-    runs-on: ${{ inputs.host_os }}
+  build_windows:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
       - name: Install latest stable Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: ${{ inputs.rust_target }}
-#      - name: Cache Qt
-#        id: cache-qt
-#        uses: actions/cache@v2
-#        with:
-#          path: ~/work/sixtyfps/Qt
-#          key: ${{ runner.os }}-${{ github.job }}-Qt
+          target: x86_64-pc-windows-msvc
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
-          version: ${{ inputs.qt_version }}
-#          cached: ${{ steps.cache-qt.outputs.cache-hit }}
-          arch: win64_mingw81 # Only used on Windows
+          version: 5.15.2
       - uses: Swatinem/rust-cache@v1            
       - name: Build
         uses: actions-rs/cargo@v1
         with:
             command: build
-            args: --verbose --target ${{ inputs.rust_target }} --no-default-features --features sixtyfps-backend-qt --release
-      - id: binary-name        
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            echo "::set-output name=binary-name::cargo-ui.exe"
-          else
-            echo "::set-output name=binary-name::cargo-ui"
-          fi
-        shell: bash
+            args: --verbose --no-default-features --features sixtyfps-backend-qt --release
       - name: Create artifact directory
         run: |
             mkdir bin
-            cp target/${{ inputs.rust_target }}/release/${{ steps.binary-name.outputs.binary-name }} bin/${{ steps.binary-name.outputs.binary-name }}
+            cp target/release/cargo-ui.exe bin/
+            cp ..\Qt\5.15.2\msvc2019_64\bin/Qt5Core.dll bin/
+            cp ..\Qt\5.15.2\msvc2019_64\bin/Qt5Gui.dll bin/
+            cp ..\Qt\5.15.2\msvc2019_64\bin/Qt5Widgets.dll bin/
+            mkdir bin\plugins\platforms
+            cp ..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll bin/plugins/platforms
+            mkdir bin\plugins\styles
+            cp ..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll bin/plugins/styles
+        # TODO: also include openglsw32.dll
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-            name: ${{ inputs.artifact_name }}
+            name: cargo-ui-windows
             path: |
                 bin
-      - name: Upload Qt Windows artifacts
-        if: inputs.host_os == 'windows-latest'
+
+  build_linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install latest stable Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v2
+        with:
+          path: ~/work/cargo-ui/Qt
+          key: ${{ runner.os }}-${{ github.job }}-Qt
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: 5.15.2
+          cached: ${{ steps.cache-qt.outputs.cache-hit }}
+      - uses: Swatinem/rust-cache@v1            
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+            command: build
+            args: --verbose --no-default-features --features sixtyfps-backend-qt --release
+      - name: Create artifact directory
+        run: |
+            mkdir bin
+            cp target/release/cargo-ui bin/
+      # TODO: use tar to preserve executable permissions
+      - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-            name: ${{ inputs.artifact_name }}-qt
+            name: cargo-ui-linux
             path: |
-              Qt\bin\Qt5Core.dll
-              Qt\bin\Qt5Gui.dll
-              Qt\bin\Qt5Widgets.dll
+                bin
 
+  build_macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install latest stable Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-apple-darwin
+      - name: Install latest stable Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: aarch64-apple-darwin
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v2
+        with:
+          path: ~/work/cargo-ui/Qt
+          key: ${{ runner.os }}-${{ github.job }}-Qt
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: 6.2.0 # for Apple Silicon support
+          cached: ${{ steps.cache-qt.outputs.cache-hit }}
+      - uses: Swatinem/rust-cache@v1            
+      - name: Build x86_64
+        uses: actions-rs/cargo@v1
+        with:
+            command: build
+            args: --verbose --target x86_64-apple-darwin --no-default-features --features sixtyfps-backend-qt --release
+#      - name: Build aarch64
+#        uses: actions-rs/cargo@v1
+#        with:
+#            command: build
+#            args: --verbose --target aarch64-apple-darwin --no-default-features --features sixtyfps-backend-qt,git2/vendored-openssl --release
+      - name: Create artifact directory
+        run: |
+            mkdir bin
+            cp target/x86_64-apple-darwin/release/cargo-ui bin
+            install_name_tool -add_rpath @executable_path/. ./bin/cargo-ui
+            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtCore.framework ./bin
+            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtGui.framework ./bin
+            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtWidgets.framework ./bin
+            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtDBus.framework ./bin
+            mkdir -p ./bin/plugins/platforms
+            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./bin/plugins/platforms
+#            lipo -create -output bin/cargo-ui target/x86_64-apple-darwin/release/cargo-ui target/aarch64-apple-darwin/release/cargo-ui
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+            name: cargo-ui-macos
+            path: |
+                bin
