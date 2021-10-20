@@ -49,7 +49,7 @@ jobs:
           target: ${{ github.event.inputs.rust_target }}
       # Only needed for the GL Backend
       - name: Install Linux Dependencies
-        if: matrix.os == 'ubuntu-20.04'
+        if: github.event.inputs.host_os == 'ubuntu-latest'
         run: sudo apt-get install libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev
       - name: Cache Qt
         id: cache-qt
