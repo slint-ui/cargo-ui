@@ -99,7 +99,7 @@ jobs:
         with:
             name: ${{ inputs.artifact_name }}-qt
             path: |
-              Qt/bin/Qt5Core.dll
-              Qt/bin/Qt5Gui.dll
-              Qt/bin/Qt5Widgets.dll
+              Qt\bin\Qt5Core.dll
+              Qt\bin\Qt5Gui.dll
+              Qt\bin\Qt5Widgets.dll
 
