@@ -57,10 +57,6 @@ jobs:
         with:
           toolchain: stable
           target: ${{ inputs.rust_target }}
-      # Only needed for the GL Backend
-      - name: Install Linux Dependencies
-        if: inputs.host_os == 'ubuntu-latest'
-        run: sudo apt-get install libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev
       - name: Cache Qt
         id: cache-qt
         uses: actions/cache@v2
@@ -78,7 +74,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: build
-            args: --verbose --target ${{ inputs.rust_target }} --release
+            args: --verbose --target ${{ inputs.rust_target }} --no-default-features --features sixtyfps-backend-qt --release
       - id: binary-name        
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
