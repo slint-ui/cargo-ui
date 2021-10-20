@@ -4,11 +4,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  call-build_cargo_ui_binary:
+  call-build_cargo_ui_binary-x86_64:
     uses: sixtyfpsui/cargo-ui/.github/workflows/build_binary.yaml@master
     with:
       host_os: "macos-latest"
       rust_target: "x86_64-apple-darwin"
       artifact_name: "cargo-ui-macos-x86_64"
+      qt_version: "6.2.0"
+
+  call-build_cargo_ui_binary-aarch64:
+    uses: sixtyfpsui/cargo-ui/.github/workflows/build_binary.yaml@master
+    with:
+      host_os: "macos-latest"
+      rust_target: "aarch64-apple-darwin"
+      artifact_name: "cargo-ui-macos-aarch64"
       qt_version: "6.2.0"
 
