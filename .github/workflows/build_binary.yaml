@@ -57,17 +57,17 @@ jobs:
         with:
           toolchain: stable
           target: ${{ inputs.rust_target }}
-      - name: Cache Qt
-        id: cache-qt
-        uses: actions/cache@v2
-        with:
-          path: ~/work/sixtyfps/Qt
-          key: ${{ runner.os }}-${{ github.job }}-Qt
+#      - name: Cache Qt
+#        id: cache-qt
+#        uses: actions/cache@v2
+#        with:
+#          path: ~/work/sixtyfps/Qt
+#          key: ${{ runner.os }}-${{ github.job }}-Qt
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
           version: ${{ inputs.qt_version }}
-          cached: ${{ steps.cache-qt.outputs.cache-hit }}
+#          cached: ${{ steps.cache-qt.outputs.cache-hit }}
           arch: win64_mingw81 # Only used on Windows
       - uses: Swatinem/rust-cache@v1            
       - name: Build
