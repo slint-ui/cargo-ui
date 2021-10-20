@@ -1,0 +1,14 @@
+name: Build macOS cargo-ui binary
+
+on:
+  workflow_dispatch:
+
+jobs:
+  call-build_cargo_ui_binary:
+    uses: sixtyfpsui/cargo-ui/.github/workflows/build_binary.yaml@master
+    with:
+      host_os: "macos-latest"
+      rust_target: "x86_64-apple-darwin"
+      artifact_name: "cargo-ui-macos-x86_64"
+      qt_version: "6.2.0"
+

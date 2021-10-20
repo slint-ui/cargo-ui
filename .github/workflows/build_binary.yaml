@@ -18,6 +18,10 @@ on:
         default: "cargo-ui-linux"
         required: false
         type: string
+      qt_version:
+        description: "Qt version to install"
+        default: "5.15.2"
+        required: false
   workflow_call:
     inputs:
       host_os:
@@ -35,6 +39,10 @@ on:
         default: "cargo-ui-linux"
         required: false
         type: string
+      qt_version:
+        description: "Qt version to install"
+        default: "5.15.2"
+        required: false
 
 jobs:
   build_cargo_ui_binary:
@@ -56,11 +64,11 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/work/sixtyfps/Qt
-          key: ${{ runner.os }}-${{ github.job }}-Qt5.15.2
+          key: ${{ runner.os }}-${{ github.job }}-Qt
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
-          version: '5.15.2'
+          version: ${{ github.event.inputs.qt_version }}
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
           arch: win64_mingw81 # Only used on Windows
       - uses: Swatinem/rust-cache@v1            
