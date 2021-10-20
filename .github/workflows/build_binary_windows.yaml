@@ -1,0 +1,13 @@
+name: Build Windows cargo-ui binary
+
+on:
+  workflow_dispatch:
+
+jobs:
+  call-build_cargo_ui_binary-x86_64:
+    uses: sixtyfpsui/cargo-ui/.github/workflows/build_binary.yaml@master
+    with:
+      host_os: "windows-latest"
+      rust_target: "x86_64-pc-windows-gnu"
+      artifact_name: "cargo-ui-windows-x86_64"
+      qt_version: "5.15.2"
