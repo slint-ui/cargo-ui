@@ -93,4 +93,13 @@ jobs:
             name: ${{ inputs.artifact_name }}
             path: |
                 bin
+      - name: Upload Qt Windows artifacts
+        if: inputs.host_os == "windows-latest"
+        uses: actions/upload-artifact@v2
+        with:
+            name: ${{ inputs.artifact_name }}-qt
+            path: |
+              ~/work/sixtyfps/Qt/bin/Qt5Core.dll
+              ~/work/sixtyfps/Qt/bin/Qt5Gui.dll
+              ~/work/sixtyfps/Qt/bin/Qt5Widgets.dll
 
