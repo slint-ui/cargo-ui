@@ -47,6 +47,10 @@ jobs:
         with:
           toolchain: stable
           target: ${{ github.event.inputs.rust_target }}
+      # Only needed for the GL Backend
+      - name: Install Linux Dependencies
+        if: matrix.os == 'ubuntu-20.04'
+        run: sudo apt-get install libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev
       - name: Cache Qt
         id: cache-qt
         uses: actions/cache@v2
