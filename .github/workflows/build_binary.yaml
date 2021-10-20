@@ -94,7 +94,7 @@ jobs:
             path: |
                 bin
       - name: Upload Qt Windows artifacts
-        if: inputs.host_os == "windows-latest"
+        if: inputs.host_os == 'windows-latest'
         uses: actions/upload-artifact@v2
         with:
             name: ${{ inputs.artifact_name }}-qt
