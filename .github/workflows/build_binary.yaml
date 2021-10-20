@@ -62,6 +62,7 @@ jobs:
         with:
           version: '5.15.2'
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
+          arch: win64_mingw81 # Only used on Windows
       - name: Set default style
         if: matrix.os != 'windows-latest'
         run: |
