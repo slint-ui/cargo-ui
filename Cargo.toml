@@ -14,10 +14,12 @@ resolver = "2"
 [features]
 x11 = ["sixtyfps/x11"]
 wayland = ["sixtyfps/wayland"]
-default = ["x11", "wayland"]
+sixtyfps-backend-qt = ["sixtyfps/backend-qt"]
+sixtyfps-backend-gl = ["sixtyfps/backend-qt"]
+default = ["x11", "wayland", "sixtyfps-backend-qt", "sixtyfps-backend-gl"]
 
 [dependencies]
-sixtyfps = "0.1.3"
+sixtyfps = { version = "0.1.3", default-features = false }
 tokio = { version = "1", features= ["full"] }
 futures = "0.3"
 cargo_metadata = "0.14"
