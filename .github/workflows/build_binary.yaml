@@ -56,10 +56,10 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: ${{ github.event.inputs.rust_target }}
+          target: ${{ inputs.rust_target }}
       # Only needed for the GL Backend
       - name: Install Linux Dependencies
-        if: github.event.inputs.host_os == 'ubuntu-latest'
+        if: inputs.host_os == 'ubuntu-latest'
         run: sudo apt-get install libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev
       - name: Cache Qt
         id: cache-qt
@@ -70,7 +70,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
-          version: ${{ github.event.inputs.qt_version }}
+          version: ${{ inputs.qt_version }}
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
           arch: win64_mingw81 # Only used on Windows
       - uses: Swatinem/rust-cache@v1            
@@ -78,7 +78,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: build
-            args: --verbose --target ${{ github.event.inputs.rust_target }} --release
+            args: --verbose --target ${{ inputs.rust_target }} --release
       - id: binary-name        
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
@@ -90,11 +90,11 @@ jobs:
       - name: Create artifact directory
         run: |
             mkdir bin
-            cp target/${{ github.event.inputs.rust_target }}/release/${{ steps.binary-name.outputs.binary-name }} bin/${{ steps.binary-name.outputs.binary-name }}
+            cp target/${{ inputs.rust_target }}/release/${{ steps.binary-name.outputs.binary-name }} bin/${{ steps.binary-name.outputs.binary-name }}
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-            name: ${{ github.event.inputs.artifact_name }}
+            name: ${{ inputs.artifact_name }}
             path: |
                 bin
 
