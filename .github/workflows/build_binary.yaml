@@ -22,6 +22,7 @@ on:
         description: "Qt version to install"
         default: "5.15.2"
         required: false
+        type: string
   workflow_call:
     inputs:
       host_os:
@@ -43,6 +44,7 @@ on:
         description: "Qt version to install"
         default: "5.15.2"
         required: false
+        type: string
 
 jobs:
   build_cargo_ui_binary:
