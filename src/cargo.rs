@@ -710,11 +710,13 @@ fn build_dep_tree(
 ) {
     let package = &metadata[package_id];
     let duplicated = duplicates.contains(package_id);
-    let outdated = crates_index
-        .and_then(|idx| idx.crate_(&package.name))
-        .and_then(|c| c.highest_stable_version().cloned())
-        .and_then(|v| Version::from_str(v.version()).ok())
-        .map_or(false, |latest| latest > package.version);
+    // We only consider indentation ==1 because `idx.crate_` is a bit too slow to do for every crate
+    let outdated = indentation == 1
+        && crates_index
+            .and_then(|idx| idx.crate_(&package.name))
+            .and_then(|c| c.highest_stable_version().cloned())
+            .and_then(|v| Version::from_str(v.version()).ok())
+            .map_or(false, |latest| latest > package.version);
     let dep_kind = node_dep
         .filter(|n| {
             !n.dep_kinds
