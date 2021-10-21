@@ -16,6 +16,7 @@ x11 = ["sixtyfps/x11"]
 wayland = ["sixtyfps/wayland"]
 sixtyfps-backend-qt = ["sixtyfps/backend-qt"]
 sixtyfps-backend-gl = ["sixtyfps/backend-qt"]
+vendored-openssl = ["git2/vendored-openssl"]
 default = ["x11", "wayland", "sixtyfps-backend-qt", "sixtyfps-backend-gl"]
 
 [dependencies]
@@ -32,7 +33,7 @@ open = "2"
 crates-index = "0.17"
 toml_edit = "0.5"
 anyhow = "1"
-
+git2 = "0.13.23"
 
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 rfd = "0.4.0"
