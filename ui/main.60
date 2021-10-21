@@ -33,7 +33,6 @@ CargoUI := Window {
     property current-package <=> cargo-view.current-package;
     property extra-run <=> cargo-view.extra-run;
     property extra-test <=> cargo-view.extra-test;
-    property has-extra-tests <=> cargo-view.has-extra-tests;
     callback action <=> cargo-view.action;
     callback cancel <=> cargo-view.cancel;
     property is-building <=> cargo-view.is-building;

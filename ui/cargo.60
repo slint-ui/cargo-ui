@@ -264,7 +264,6 @@ export CargoView := GridBox {
     property <string> current-package;
     property <[string]> extra-run;
     property <[string]> extra-test;
-    property <bool> has-extra-tests : true; // Remove, once we can query the length of models in .60
     callback action(Action);
     callback cancel;
     property <bool> is-building : false;
@@ -412,7 +411,7 @@ export CargoView := GridBox {
         }
         test_cb := ComboBox {
             model: extra-test;
-            enabled: root.workspace-valid && root.has-extra-tests;
+            enabled: root.workspace-valid && root.extra-test.length > 0;
         }
     }
 
