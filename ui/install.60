@@ -125,7 +125,7 @@ export CargoInstallView := GridBox {
                 CratesCompletionData.update_completion(text);
                 completion_shown = text != "";
             }
-            if completion_shown && CratesCompletionData.completion_result > 0 : Rectangle {
+            if completion_shown && CratesCompletionData.completions.length > 0 : Rectangle {
                 background: white;
                 y: -height - 6px;
                 height: min(install-le.y - 12px, inner_layout.preferred-height);

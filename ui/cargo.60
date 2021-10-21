@@ -134,7 +134,7 @@ DepTreePane := Pane {
                     CratesCompletionData.update_completion(text);
                     completion_shown = text != "";
                 }
-                if completion_shown && CratesCompletionData.completion_result > 0 :
+                if completion_shown && CratesCompletionData.completions.length > 0 :
                 Rectangle {
                     background: white;
                     y: parent.height + 6px;

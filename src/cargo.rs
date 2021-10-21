@@ -999,8 +999,6 @@ async fn install_completion(
     }
     handle.upgrade_in_event_loop(move |ui| {
         ui.global::<CratesCompletionData>()
-            .set_completion_result(result.len() as i32);
-        ui.global::<CratesCompletionData>()
             .set_completions(ModelHandle::from(
                 Rc::new(VecModel::from(result)) as Rc<dyn Model<Data = SharedString>>
             ));
