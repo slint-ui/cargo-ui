@@ -16,7 +16,7 @@ x11 = ["sixtyfps/x11"]
 wayland = ["sixtyfps/wayland"]
 sixtyfps-backend-qt = ["sixtyfps/backend-qt"]
 sixtyfps-backend-gl = ["sixtyfps/backend-qt"]
-vendored-openssl = ["git2/vendored-openssl"]
+vendored-openssl = ["crates-index/vendored-openssl"]
 default = ["x11", "wayland", "sixtyfps-backend-qt", "sixtyfps-backend-gl"]
 
 [dependencies]
@@ -30,10 +30,9 @@ dunce = "1"
 itertools = "0.10"
 shlex = "1"
 open = "2"
-crates-index = "0.17"
-toml_edit = "0.5"
+crates-index = { version = "0.18.0", default-features = false }
+toml_edit = "0.6.0"
 anyhow = "1"
-git2 = "0.13.23"
 
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 rfd = "0.4.0"

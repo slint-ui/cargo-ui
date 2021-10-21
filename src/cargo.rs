@@ -310,13 +310,9 @@ async fn cargo_worker_loop(
 }
 
 async fn load_crate_index() -> Result<crates_index::Index, String> {
-    tokio::task::spawn_blocking(|| -> Result<crates_index::Index, String> {
-        let index = crates_index::Index::new_cargo_default();
-        index.retrieve_or_update().map_err(|x| x.to_string())?;
-        Ok(index)
-    })
-    .await
-    .unwrap_or_else(|x| Err(x.to_string()))
+    let mut index = crates_index::Index::new_cargo_default().map_err(|x| x.to_string())?;
+    index.update().map_err(|x| x.to_string())?;
+    Ok(index)
 }
 
 async fn run_cargo(
