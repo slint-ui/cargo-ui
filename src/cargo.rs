@@ -680,6 +680,7 @@ fn show_open_dialog(manifest: Manifest) -> Manifest {
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 fn show_open_dialog(manifest: Manifest) -> Manifest {
     let mut dialog = rfd::FileDialog::new();
+    dialog = dialog.set_title("Select a manifest");
 
     if let Some(directory) = manifest.directory() {
         dialog = dialog.set_directory(directory);
