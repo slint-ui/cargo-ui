@@ -274,7 +274,7 @@ export CargoView := GridBox {
     property <string> build-results <=> build-results-label.text;
     property <string> check-results <=> check-results-label.text;
     callback reload-manifest(string);
-    callback show-open-dialog;
+    callback show-open-dialog(string);
     property <bool> build-pane-visible;
     property <[DependencyNode]> deptree;
     property <bool> has-features;
@@ -297,7 +297,7 @@ export CargoView := GridBox {
             }
             open_button := Button {
                 text: "📂";
-                clicked => { root.show-open-dialog(); }
+                clicked => { root.show-open-dialog(le_manifest.text); }
             }
         }
     }

@@ -32,9 +32,8 @@ pub enum CargoMessage {
         action: Action,
         feature_settings: FeatureSettings,
     },
-    ReloadManifest(SharedString),
+    ReloadManifest(Manifest),
     PackageSelected(SharedString),
-    ShowOpenDialog,
     Cancel,
     /// Remove the dependency `.1` from package `.0`
     DependencyRemove {
@@ -175,12 +174,7 @@ async fn cargo_worker_loop(
                 run_cargo_future.set(Fuse::terminated());
             }
             CargoMessage::ReloadManifest(m) => {
-                manifest = PathBuf::from(m.as_str()).into();
-                update_features = true;
-                read_metadata_future.set(read_metadata(manifest.clone(), handle.clone()).fuse());
-            }
-            CargoMessage::ShowOpenDialog => {
-                manifest = show_open_dialog(manifest);
+                manifest = m;
                 update_features = true;
                 read_metadata_future.set(read_metadata(manifest.clone(), handle.clone()).fuse());
             }
@@ -655,7 +649,7 @@ fn apply_metadata(
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-fn show_open_dialog(manifest: Manifest) -> Manifest {
+pub fn show_open_dialog(manifest: Manifest) -> Manifest {
     use dialog::DialogBox;
 
     let mut dialog = dialog::FileSelection::new("Select a manifest (Cargo.toml)");
@@ -678,7 +672,7 @@ fn show_open_dialog(manifest: Manifest) -> Manifest {
 }
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
-fn show_open_dialog(manifest: Manifest) -> Manifest {
+pub fn show_open_dialog(manifest: Manifest) -> Manifest {
     let mut dialog = rfd::FileDialog::new();
     dialog = dialog.set_title("Select a manifest");
 
@@ -843,7 +837,7 @@ impl sixtyfps::Model for DepGraphModel {
 }
 
 #[derive(Debug, Clone)]
-struct Manifest(PathBuf);
+pub struct Manifest(PathBuf);
 
 impl From<PathBuf> for Manifest {
     fn from(mut directory_or_file: PathBuf) -> Self {

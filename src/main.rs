@@ -50,11 +50,24 @@ fn main() {
     });
     cargo_ui.on_show_open_dialog({
         let cargo_channel = cargo_worker.channel.clone();
-        move || cargo_channel.send(CargoMessage::ShowOpenDialog).unwrap()
+        move |current_manifest| {
+            let selected_manifest =
+                cargo::show_open_dialog(std::path::PathBuf::from(current_manifest.as_str()).into());
+
+            cargo_channel
+                .send(CargoMessage::ReloadManifest(selected_manifest))
+                .unwrap();
+        }
     });
     cargo_ui.on_reload_manifest({
         let cargo_channel = cargo_worker.channel.clone();
-        move |m| cargo_channel.send(CargoMessage::ReloadManifest(m)).unwrap()
+        move |m| {
+            cargo_channel
+                .send(CargoMessage::ReloadManifest(
+                    std::path::PathBuf::from(m.as_str()).into(),
+                ))
+                .unwrap()
+        }
     });
     cargo_ui.on_package_selected({
         let cargo_channel = cargo_worker.channel.clone();
