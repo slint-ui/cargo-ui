@@ -834,8 +834,8 @@ impl sixtyfps::Model for DepGraphModel {
         node.node.borrow().clone()
     }
 
-    fn attach_peer(&self, peer: sixtyfps::ModelPeer) {
-        self.notify.attach(peer);
+    fn model_tracker(&self) -> &dyn sixtyfps::ModelTracker {
+        &self.notify
     }
 
     fn set_row_data(&self, row: usize, data: Self::Data) {
