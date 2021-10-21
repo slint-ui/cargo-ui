@@ -7,9 +7,8 @@ This is a project to make a GUI for cargo, built using [SixtyFPS](https://github
 
 ## Screnshots
 
-![Screenshot main](screenshots/main.png)
-![Screenshot Dependency tree](screenshots/deptree.png)
-![Screenshot install](screenshots/cargo_install.png)
+| ![Screenshot main](screenshots/main.png) | ![Screenshot Dependency tree](screenshots/deptree.png) | ![Screenshot install](screenshots/cargo_install.png) |
+| ---- | ---- | ---- | 
 
 ## The idea
 
@@ -50,8 +49,8 @@ Some ideas for features:
  - [ ] Maybe integrate with rustup to update the toolchain or install new one
  - [x] See the dependencies as an expendable tree
  - [ ] Show duplicated dependencies
- - [ ] Show outdated dependencies, with button to easily update
- - [ ] Ability to easily add dependency (by searching the crates.io index)
+ - [x] Show outdated dependencies, with button to easily update
+ - [x] Ability to easily add dependency (by searching the crates.io index)
  - [ ] Edit features of dependencies from a list.
  - [ ] Show asm, llvm-ir, ...
  - [ ] Show build progress and be able to cancel the build
