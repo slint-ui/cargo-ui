@@ -16,7 +16,6 @@ x11 = ["sixtyfps/x11"]
 wayland = ["sixtyfps/wayland"]
 sixtyfps-backend-qt = ["sixtyfps/backend-qt"]
 sixtyfps-backend-gl = ["sixtyfps/backend-qt"]
-vendored-openssl = ["crates-index/vendored-openssl"]
 default = ["x11", "wayland", "sixtyfps-backend-qt", "sixtyfps-backend-gl"]
 
 [dependencies]

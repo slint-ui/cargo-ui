@@ -115,7 +115,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: build
-            args: --verbose --target aarch64-apple-darwin --no-default-features --features sixtyfps-backend-qt,vendored-openssl --release
+            args: --verbose --target aarch64-apple-darwin --no-default-features --features sixtyfps-backend-qt --release
       - name: Create artifact directory
         run: |
             mkdir bin
