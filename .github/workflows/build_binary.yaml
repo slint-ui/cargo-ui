@@ -111,15 +111,15 @@ jobs:
         with:
             command: build
             args: --verbose --target x86_64-apple-darwin --no-default-features --features sixtyfps-backend-qt --release
-#      - name: Build aarch64
-#        uses: actions-rs/cargo@v1
-#        with:
-#            command: build
-#            args: --verbose --target aarch64-apple-darwin --no-default-features --features sixtyfps-backend-qt,git2/vendored-openssl --release
+      - name: Build aarch64
+        uses: actions-rs/cargo@v1
+        with:
+            command: build
+            args: --verbose --target aarch64-apple-darwin --no-default-features --features sixtyfps-backend-qt,vendored-openssl --release
       - name: Create artifact directory
         run: |
             mkdir bin
-            cp target/x86_64-apple-darwin/release/cargo-ui bin
+            lipo -create -output bin/cargo-ui target/x86_64-apple-darwin/release/cargo-ui target/aarch64-apple-darwin/release/cargo-ui
             install_name_tool -add_rpath @executable_path/. ./bin/cargo-ui
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtCore.framework ./bin
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtGui.framework ./bin
@@ -127,7 +127,6 @@ jobs:
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtDBus.framework ./bin
             mkdir -p ./bin/plugins/platforms
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./bin/plugins/platforms
-#            lipo -create -output bin/cargo-ui target/x86_64-apple-darwin/release/cargo-ui target/aarch64-apple-darwin/release/cargo-ui
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
