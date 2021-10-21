@@ -34,7 +34,6 @@ jobs:
             cp ..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll bin/plugins/platforms
             mkdir bin\plugins\styles
             cp ..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll bin/plugins/styles
-        # TODO: also include openglsw32.dll
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
