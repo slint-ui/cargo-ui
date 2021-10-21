@@ -5,7 +5,11 @@
 
 This is a project to make a GUI for cargo, built using [SixtyFPS](https://github.com/sixtyfpsui/sixtyfps):
 
-![Screenshot](screenshot_main.png)
+## Screnshots
+
+![Screenshot main](screenshots/main.png)
+![Screenshot Dependency tree](screenshots/deptree.png)
+![Screenshot install](screenshots/cargo_install.png)
 
 ## The idea
 
