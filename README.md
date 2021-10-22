@@ -10,10 +10,27 @@ This is a project to make a GUI for cargo, built using [SixtyFPS](https://github
 | ![Screenshot main](screenshots/main.png) | ![Screenshot Dependency tree](screenshots/deptree.png) | ![Screenshot install](screenshots/cargo_install.png) |
 | ---- | ---- | ---- | 
 
-## The idea
+
+## Installation
+
+Cargo UI can be installed from crates.io:
 
 ```sh
 cargo install cargo-ui
+```
+
+Alternatively, you can download one of our pre-built binaries for Linux or Windows:
+
+1. Open <https://github.com/sixtyfpsui/cargo-ui/releases>
+2. Click on the latest release
+3. From "Assets" download either `cargo-ui-linux.tar.gz` for a Linux x86-64 binary
+   or `cargo-ui-windows.zip` for a Windows x86-64 binary.
+4. Uncompress the downloaded archive and run `cargo-ui`/`cargo-ui.exe` or place the
+   uncompressed directory into your `PATH`.
+
+## Usage
+
+```sh
 cargo ui
 ```
 
