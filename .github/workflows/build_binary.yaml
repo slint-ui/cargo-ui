@@ -43,7 +43,8 @@ jobs:
             mkdir 3rdparty-licenses
             cd ..
             cd ..
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/LICENSE.QT pkg/cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
             cp ../LICENSE-* pkg/cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o pkg/cargo-ui/3rdparty-licenses/index.html
       - name: Upload artifact
