@@ -71,13 +71,13 @@ jobs:
         run: |
             mkdir bin
             cp target/release/cargo-ui bin/
-      # TODO: use tar to preserve executable permissions
+      - name: Tar artifacts to preserve permissions
+        run: tar czvf cargo-ui-linux.tar.gz bin
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
             name: cargo-ui-linux
-            path: |
-                bin
+            path: cargo-ui-linux.tar.gz
 
   build_macos:
     runs-on: macos-latest
@@ -132,9 +132,10 @@ jobs:
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtDBus.framework ./bin
             mkdir -p ./bin/plugins/platforms
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./bin/plugins/platforms
+      - name: Tar artifacts to preserve permissions
+        run: tar czvf cargo-ui-macos.tar.gz bin
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
             name: cargo-ui-macos
-            path: |
-                bin
+            path: cargo-ui-macos.tar.gz
