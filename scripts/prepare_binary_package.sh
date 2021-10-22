@@ -30,4 +30,4 @@ qt_version=$3
 mkdir -p $target_path
 cp -a `dirname $0`/../LICENSE-* $target_path
 
-cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/LICENSE.QT $target_path/
+cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/QtThirdPartySoftware_Listing.txt $target_path/
