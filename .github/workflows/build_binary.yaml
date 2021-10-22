@@ -29,15 +29,14 @@ jobs:
             cd pkg
             mkdir cargo-ui
             cd cargo-ui
-            mkdir bin
-            cp ..\..\target/release/cargo-ui.exe bin/
-            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Core.dll bin/
-            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Gui.dll bin/
-            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Widgets.dll bin/
-            mkdir bin\plugins\platforms
-            cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll bin/plugins/platforms
-            mkdir bin\plugins\styles
-            cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll bin/plugins/styles
+            cp ..\..\target/release/cargo-ui.exe ./
+            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Core.dll ./
+            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Gui.dll ./
+            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Widgets.dll ./
+            mkdir .\plugins\platforms
+            cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll ./plugins/platforms
+            mkdir .\plugins\styles
+            cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll ./plugins/styles
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
@@ -75,8 +74,7 @@ jobs:
         run: |
             mkdir cargo-ui
             cd cargo-ui
-            mkdir bin
-            cp ../target/release/cargo-ui bin/
+            cp ../target/release/cargo-ui ./
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-linux.tar.gz cargo-ui
       - name: Upload artifact
@@ -133,15 +131,14 @@ jobs:
         run: |
             mkdir cargo-ui
             cd cargo-ui
-            mkdir bin
-            cp ../target/x86_64-apple-darwin/release/cargo-ui bin/cargo-ui
-            install_name_tool -add_rpath @executable_path/. ./bin/cargo-ui
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtCore.framework ./bin
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtGui.framework ./bin
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtWidgets.framework ./bin
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtDBus.framework ./bin
-            mkdir -p ./bin/plugins/platforms
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./bin/plugins/platforms
+            cp ../target/x86_64-apple-darwin/release/cargo-ui .
+            install_name_tool -add_rpath @executable_path/. ./cargo-ui
+            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtCore.framework ./
+            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtGui.framework ./
+            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtWidgets.framework ./
+            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtDBus.framework ./
+            mkdir -p ./plugins/platforms
+            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-macos.tar.gz cargo-ui
       - name: Upload artifact
