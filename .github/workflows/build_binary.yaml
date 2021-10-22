@@ -40,6 +40,9 @@ jobs:
             cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll ./plugins/platforms
             mkdir .\plugins\styles
             cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll ./plugins/styles
+            cd ..
+            cd ..
+            bash -x ./scripts/prepare_binary_package.sh pkg\cargo-ui ..\Qt 5.15.2
       - run: cargo about generate about.hbs -o pkg/cargo-ui/rust-attributions.html
       - name: Upload artifact
         uses: actions/upload-artifact@v2
@@ -80,8 +83,8 @@ jobs:
       - name: Create artifact directory
         run: |
             mkdir cargo-ui
-            cd cargo-ui
-            cp ../target/release/cargo-ui ./
+            cp ../target/release/cargo-ui .cargo-ui/
+            ./scripts/prepare_binary_package.sh ./cargo-ui ~/work/sixtyfps/Qt 5.15.2
       - run: cargo about generate about.hbs -o cargo-ui/rust-attributions.html
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-linux.tar.gz cargo-ui
@@ -150,6 +153,8 @@ jobs:
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtDBus.framework ./
             mkdir -p ./plugins/platforms
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
+            cd ..
+            ./scripts/prepare_binary_package.sh ./cargo-ui ~/work/sixtyfps/Qt 6.2.0
       - run: cargo about generate about.hbs -o cargo-ui/rust-attributions.html
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-macos.tar.gz cargo-ui
