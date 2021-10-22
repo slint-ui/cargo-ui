@@ -25,21 +25,23 @@ jobs:
             args: --verbose --no-default-features --features sixtyfps-backend-qt --release
       - name: Create artifact directory
         run: |
+            mkdir cargo-ui
+            cd cargo-ui
             mkdir bin
-            cp target/release/cargo-ui.exe bin/
-            cp ..\Qt\5.15.2\msvc2019_64\bin/Qt5Core.dll bin/
-            cp ..\Qt\5.15.2\msvc2019_64\bin/Qt5Gui.dll bin/
-            cp ..\Qt\5.15.2\msvc2019_64\bin/Qt5Widgets.dll bin/
+            cp ..\target/release/cargo-ui.exe bin/
+            cp ..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Core.dll bin/
+            cp ..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Gui.dll bin/
+            cp ..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Widgets.dll bin/
             mkdir bin\plugins\platforms
-            cp ..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll bin/plugins/platforms
+            cp ..\..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll bin/plugins/platforms
             mkdir bin\plugins\styles
-            cp ..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll bin/plugins/styles
+            cp ..\..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll bin/plugins/styles
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
             name: cargo-ui-windows
             path: |
-                bin
+                cargo-ui
 
   build_linux:
     runs-on: ubuntu-latest
@@ -69,10 +71,12 @@ jobs:
             args: --verbose --no-default-features --features sixtyfps-backend-qt --release
       - name: Create artifact directory
         run: |
+            mkdir cargo-ui
+            cd bin
             mkdir bin
-            cp target/release/cargo-ui bin/
+            cp ../target/release/cargo-ui bin/
       - name: Tar artifacts to preserve permissions
-        run: tar czvf cargo-ui-linux.tar.gz bin
+        run: tar czvf cargo-ui-linux.tar.gz cargo-ui
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
@@ -125,8 +129,10 @@ jobs:
 #            lipo -create -output bin/cargo-ui target/x86_64-apple-darwin/release/cargo-ui target/aarch64-apple-darwin/release/cargo-ui
       - name: Create artifact directory
         run: |
+            mkdir cargo-ui
+            cd cargo-ui
             mkdir bin
-            cp target/x86_64-apple-darwin/release/cargo-ui bin/cargo-ui
+            cp ../target/x86_64-apple-darwin/release/cargo-ui bin/cargo-ui
             install_name_tool -add_rpath @executable_path/. ./bin/cargo-ui
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtCore.framework ./bin
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtGui.framework ./bin
@@ -135,7 +141,7 @@ jobs:
             mkdir -p ./bin/plugins/platforms
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./bin/plugins/platforms
       - name: Tar artifacts to preserve permissions
-        run: tar czvf cargo-ui-macos.tar.gz bin
+        run: tar czvf cargo-ui-macos.tar.gz cargo-ui
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
