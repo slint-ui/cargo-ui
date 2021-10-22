@@ -83,7 +83,7 @@ jobs:
       - name: Create artifact directory
         run: |
             mkdir cargo-ui
-            cp ../target/release/cargo-ui .cargo-ui/
+            cp ./target/release/cargo-ui ./cargo-ui/
             ./scripts/prepare_binary_package.sh ./cargo-ui ~/work/sixtyfps/Qt 5.15.2
       - run: cargo about generate about.hbs -o cargo-ui/rust-attributions.html
       - name: Tar artifacts to preserve permissions
