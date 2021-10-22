@@ -25,23 +25,25 @@ jobs:
             args: --verbose --no-default-features --features sixtyfps-backend-qt --release
       - name: Create artifact directory
         run: |
+            mkdir pkg
+            cd pkg
             mkdir cargo-ui
             cd cargo-ui
             mkdir bin
-            cp ..\target/release/cargo-ui.exe bin/
-            cp ..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Core.dll bin/
-            cp ..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Gui.dll bin/
-            cp ..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Widgets.dll bin/
+            cp ..\..\target/release/cargo-ui.exe bin/
+            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Core.dll bin/
+            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Gui.dll bin/
+            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Widgets.dll bin/
             mkdir bin\plugins\platforms
-            cp ..\..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll bin/plugins/platforms
+            cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll bin/plugins/platforms
             mkdir bin\plugins\styles
-            cp ..\..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll bin/plugins/styles
+            cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll bin/plugins/styles
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
             name: cargo-ui-windows
             path: |
-                cargo-ui
+                pkg
 
   build_linux:
     runs-on: ubuntu-latest
