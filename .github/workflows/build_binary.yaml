@@ -17,7 +17,10 @@ jobs:
         uses: jurplel/install-qt-action@v2
         with:
           version: 5.15.2
-      - uses: Swatinem/rust-cache@v1            
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-about
       - name: Build
         uses: actions-rs/cargo@v1
         with:
@@ -37,6 +40,7 @@ jobs:
             cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll ./plugins/platforms
             mkdir .\plugins\styles
             cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll ./plugins/styles
+      - run: cargo about generate about.hbs -o pkg/cargo-ui/rust-attributions.html
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
@@ -65,6 +69,9 @@ jobs:
           version: 5.15.2
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
       - uses: Swatinem/rust-cache@v1            
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-about
       - name: Build
         uses: actions-rs/cargo@v1
         with:
@@ -75,6 +82,7 @@ jobs:
             mkdir cargo-ui
             cd cargo-ui
             cp ../target/release/cargo-ui ./
+      - run: cargo about generate about.hbs -o cargo-ui/rust-attributions.html
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-linux.tar.gz cargo-ui
       - name: Upload artifact
@@ -115,6 +123,9 @@ jobs:
           version: 6.2.0 # for Apple Silicon support
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
       - uses: Swatinem/rust-cache@v1            
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-about
       - name: Build x86_64
         uses: actions-rs/cargo@v1
         with:
@@ -139,6 +150,7 @@ jobs:
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtDBus.framework ./
             mkdir -p ./plugins/platforms
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
+      - run: cargo about generate about.hbs -o cargo-ui/rust-attributions.html
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-macos.tar.gz cargo-ui
       - name: Upload artifact
