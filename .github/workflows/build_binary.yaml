@@ -40,10 +40,12 @@ jobs:
             cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll ./plugins/platforms
             mkdir .\plugins\styles
             cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll ./plugins/styles
+            mkdir 3rdparty-licenses
             cd ..
             cd ..
-            bash -x ./scripts/prepare_binary_package.sh pkg\cargo-ui ..\Qt 5.15.2
-      - run: cargo about generate about.hbs -o pkg/cargo-ui/3rdparty-licenses/index.html
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
+            cp ../LICENSE-* pkg/cargo-ui/3rdparty-licenses/
+            cargo about generate about.hbs -o pkg/cargo-ui/3rdparty-licenses/index.html
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
@@ -82,10 +84,11 @@ jobs:
             args: --verbose --no-default-features --features sixtyfps-backend-qt --release
       - name: Create artifact directory
         run: |
-            mkdir cargo-ui
+            mkdir -p cargo-ui/3rdparty-licenses
             cp ./target/release/cargo-ui ./cargo-ui/
-            ./scripts/prepare_binary_package.sh ./cargo-ui ~/work/sixtyfps/Qt 5.15.2
-      - run: cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
+            cp ./LICENSE-* cargo-ui/3rdparty-licenses/
+            cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-linux.tar.gz cargo-ui
       - name: Upload artifact
@@ -143,7 +146,7 @@ jobs:
 ##            lipo -create -output bin/cargo-ui target/x86_64-apple-darwin/release/cargo-ui target/aarch64-apple-darwin/release/cargo-ui
 #      - name: Create artifact directory
 #        run: |
-#            mkdir cargo-ui
+#            mkdir -p cargo-ui/3rdparty-licenses
 #            cd cargo-ui
 #            cp ../target/x86_64-apple-darwin/release/cargo-ui .
 #            install_name_tool -add_rpath @executable_path/. ./cargo-ui
@@ -154,8 +157,9 @@ jobs:
 #            mkdir -p ./plugins/platforms
 #            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
 #            cd ..
-#            ./scripts/prepare_binary_package.sh ./cargo-ui ~/work/sixtyfps/Qt 6.2.0
-#      - run: cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
+#            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
+#            cp ./LICENSE-* cargo-ui/3rdparty-licenses/
+#            cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
 #      - name: Tar artifacts to preserve permissions
 #        run: tar czvf cargo-ui-macos.tar.gz cargo-ui
 #      - name: Upload artifact
