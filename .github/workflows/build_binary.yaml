@@ -72,7 +72,7 @@ jobs:
       - name: Create artifact directory
         run: |
             mkdir cargo-ui
-            cd bin
+            cd cargo-ui
             mkdir bin
             cp ../target/release/cargo-ui bin/
       - name: Tar artifacts to preserve permissions
