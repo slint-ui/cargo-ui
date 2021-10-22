@@ -93,73 +93,74 @@ jobs:
         with:
             name: cargo-ui-linux
             path: cargo-ui-linux.tar.gz
-
-  build_macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install latest stable Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: x86_64-apple-darwin
-      - name: Install latest stable Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: aarch64-apple-darwin
-      - name: Select XCode version
-        run: sudo xcode-select -s "/Applications/Xcode_12.2.app"
-      - name: Select SDK
-        run: |
-          echo "SDKROOT=$(xcrun -sdk macosx11.0 --show-sdk-path)" >> $GITHUB_ENV
-          echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx11.0 --show-sdk-platform-version)" >> $GITHUB_ENV
-      - name: Cache Qt
-        id: cache-qt
-        uses: actions/cache@v2
-        with:
-          path: ~/work/cargo-ui/Qt
-          key: ${{ runner.os }}-${{ github.job }}-Qt
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v2
-        with:
-          version: 6.2.0 # for Apple Silicon support
-          cached: ${{ steps.cache-qt.outputs.cache-hit }}
-      - uses: Swatinem/rust-cache@v1            
-      - uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-about
-      - name: Build x86_64
-        uses: actions-rs/cargo@v1
-        with:
-            command: build
-            args: --verbose --target x86_64-apple-darwin --no-default-features --features sixtyfps-backend-qt --release
-# aarch64 doesn't cross-build because an aarch64 build of openssl can't be found            
-#      - name: Build aarch64
+#
+#  build_macos:
+#    runs-on: macos-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: Install latest stable Rust
+#        uses: actions-rs/toolchain@v1
+#        with:
+#          toolchain: stable
+#          target: x86_64-apple-darwin
+#      - name: Install latest stable Rust
+#        uses: actions-rs/toolchain@v1
+#        with:
+#          toolchain: stable
+#          target: aarch64-apple-darwin
+#      - name: Select XCode version
+#        run: sudo xcode-select -s "/Applications/Xcode_12.2.app"
+#      - name: Select SDK
+#        run: |
+#          echo "SDKROOT=$(xcrun -sdk macosx11.0 --show-sdk-path)" >> $GITHUB_ENV
+#          echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx11.0 --show-sdk-platform-version)" >> $GITHUB_ENV
+#      - name: Cache Qt
+#        id: cache-qt
+#        uses: actions/cache@v2
+#        with:
+#          path: ~/work/cargo-ui/Qt
+#          key: ${{ runner.os }}-${{ github.job }}-Qt
+#      - name: Install Qt
+#        uses: jurplel/install-qt-action@v2
+#        with:
+#          version: 6.2.0 # for Apple Silicon support
+#          cached: ${{ steps.cache-qt.outputs.cache-hit }}
+#      - uses: Swatinem/rust-cache@v1            
+#      - uses: actions-rs/install@v0.1
+#        with:
+#          crate: cargo-about
+#      - name: Build x86_64
 #        uses: actions-rs/cargo@v1
 #        with:
 #            command: build
-#            args: --verbose --target aarch64-apple-darwin --no-default-features --features sixtyfps-backend-qt --release
-#            lipo -create -output bin/cargo-ui target/x86_64-apple-darwin/release/cargo-ui target/aarch64-apple-darwin/release/cargo-ui
-      - name: Create artifact directory
-        run: |
-            mkdir cargo-ui
-            cd cargo-ui
-            cp ../target/x86_64-apple-darwin/release/cargo-ui .
-            install_name_tool -add_rpath @executable_path/. ./cargo-ui
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtCore.framework ./
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtGui.framework ./
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtWidgets.framework ./
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtDBus.framework ./
-            mkdir -p ./plugins/platforms
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
-            cd ..
-            ./scripts/prepare_binary_package.sh ./cargo-ui ~/work/sixtyfps/Qt 6.2.0
-      - run: cargo about generate about.hbs -o cargo-ui/rust-attributions.html
-      - name: Tar artifacts to preserve permissions
-        run: tar czvf cargo-ui-macos.tar.gz cargo-ui
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-            name: cargo-ui-macos
-            path: cargo-ui-macos.tar.gz
+#            args: --verbose --target x86_64-apple-darwin --no-default-features --features sixtyfps-backend-qt --release
+## aarch64 doesn't cross-build because an aarch64 build of openssl can't be found            
+##      - name: Build aarch64
+##        uses: actions-rs/cargo@v1
+##        with:
+##            command: build
+##            args: --verbose --target aarch64-apple-darwin --no-default-features --features sixtyfps-backend-qt --release
+##            lipo -create -output bin/cargo-ui target/x86_64-apple-darwin/release/cargo-ui target/aarch64-apple-darwin/release/cargo-ui
+#      - name: Create artifact directory
+#        run: |
+#            mkdir cargo-ui
+#            cd cargo-ui
+#            cp ../target/x86_64-apple-darwin/release/cargo-ui .
+#            install_name_tool -add_rpath @executable_path/. ./cargo-ui
+#            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtCore.framework ./
+#            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtGui.framework ./
+#            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtWidgets.framework ./
+#            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtDBus.framework ./
+#            mkdir -p ./plugins/platforms
+#            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
+#            cd ..
+#            ./scripts/prepare_binary_package.sh ./cargo-ui ~/work/sixtyfps/Qt 6.2.0
+#      - run: cargo about generate about.hbs -o cargo-ui/rust-attributions.html
+#      - name: Tar artifacts to preserve permissions
+#        run: tar czvf cargo-ui-macos.tar.gz cargo-ui
+#      - name: Upload artifact
+#        uses: actions/upload-artifact@v2
+#        with:
+#            name: cargo-ui-macos
+#            path: cargo-ui-macos.tar.gz
+#
