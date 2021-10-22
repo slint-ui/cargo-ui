@@ -43,7 +43,7 @@ jobs:
             cd ..
             cd ..
             bash -x ./scripts/prepare_binary_package.sh pkg\cargo-ui ..\Qt 5.15.2
-      - run: cargo about generate about.hbs -o pkg/cargo-ui/rust-attributions.html
+      - run: cargo about generate about.hbs -o pkg/cargo-ui/3rdparty-licenses/index.html
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
@@ -85,7 +85,7 @@ jobs:
             mkdir cargo-ui
             cp ./target/release/cargo-ui ./cargo-ui/
             ./scripts/prepare_binary_package.sh ./cargo-ui ~/work/sixtyfps/Qt 5.15.2
-      - run: cargo about generate about.hbs -o cargo-ui/rust-attributions.html
+      - run: cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-linux.tar.gz cargo-ui
       - name: Upload artifact
@@ -155,7 +155,7 @@ jobs:
 #            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
 #            cd ..
 #            ./scripts/prepare_binary_package.sh ./cargo-ui ~/work/sixtyfps/Qt 6.2.0
-#      - run: cargo about generate about.hbs -o cargo-ui/rust-attributions.html
+#      - run: cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
 #      - name: Tar artifacts to preserve permissions
 #        run: tar czvf cargo-ui-macos.tar.gz cargo-ui
 #      - name: Upload artifact
