@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 // FIXME: Re-enable clippy when sixtyfps generated code is clippy-clean.
 #[allow(clippy::all)]
 mod generated_code {
