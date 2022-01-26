@@ -653,30 +653,6 @@ fn apply_metadata(
     });
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-fn show_open_dialog(manifest: Manifest) -> Manifest {
-    use dialog::DialogBox;
-
-    let mut dialog = dialog::FileSelection::new("Select a manifest (Cargo.toml)");
-    dialog
-        .title("Select a manifest")
-        .mode(dialog::FileSelectionMode::Open);
-
-    if let Some(directory) = manifest.directory() {
-        dialog.path(directory);
-    }
-
-    match dialog.show() {
-        Ok(Some(r)) => PathBuf::from(r).into(),
-        Ok(None) => manifest,
-        Err(e) => {
-            eprintln!("{}", e);
-            manifest
-        }
-    }
-}
-
-#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn show_open_dialog(manifest: Manifest) -> Manifest {
     let mut dialog = rfd::FileDialog::new();
     dialog = dialog.set_title("Select a manifest");
