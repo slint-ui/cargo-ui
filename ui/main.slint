@@ -5,16 +5,16 @@
 import {
     ComboBox, VerticalBox, HorizontalBox, GridBox, Button,
     LineEdit, ListView, GroupBox, CheckBox, TabWidget,
-    AboutSixtyFPS
-} from "sixtyfps_widgets.60";
+    AboutSlint
+} from "std-widgets.slint";
 
 import {
     Action, Feature, CargoView, Diag, DependencyData, DependencyNode, BuildingPane
-} from "cargo.60";
+} from "cargo.slint";
 
-import { Toolchain, RustupView } from "rustup.60";
-import { CargoInstallView, InstalledCrate, CargoInstallData } from "install.60";
-import { CratesCompletionData } from "crates_completion.60";
+import { Toolchain, RustupView } from "rustup.slint";
+import { CargoInstallView, InstalledCrate, CargoInstallData } from "install.slint";
+import { CratesCompletionData } from "crates_completion.slint";
 export {DependencyData, DependencyNode, CargoInstallData, CratesCompletionData }
 
 CargoUI := Window {
@@ -52,9 +52,6 @@ CargoUI := Window {
     // Rustup aliases
     property toolchains <=> rustup-view.toolchains;
     property toolchains-available <=> rustup-view.toolchains-available;
-
-    // Workaround: remove in SixtyFPS 0.1.4
-    property <{a: DependencyNode, b: InstalledCrate}> workaround;
 
     VerticalBox {
         TabWidget {
@@ -97,7 +94,7 @@ CargoUI := Window {
                     HorizontalBox {
                         alignment: end;
                         vertical-stretch: 0;
-                        AboutSixtyFPS { TouchArea { clicked => { open-url("https://sixtyfps.io"); } } }
+                        AboutSlint { TouchArea { clicked => { open-url("https://sixtyfps.io"); } } }
                     }
                 }
             }

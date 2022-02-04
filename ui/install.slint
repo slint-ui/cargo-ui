@@ -5,9 +5,9 @@
 import {
     ComboBox, VerticalBox, HorizontalBox, GridBox, Button,
     LineEdit, ListView, GroupBox, CheckBox
-} from "sixtyfps_widgets.60";
+} from "std-widgets.slint";
 
-import { CratesCompletionData } from "crates_completion.60";
+import { CratesCompletionData } from "crates_completion.slint";
 
 export struct InstalledCrate := {
     name: string,
@@ -32,15 +32,14 @@ export CargoInstallView := GridBox {
     property <bool> completion_shown;
 
     // This is kind of a hack to get animated progressbar and have an animation that runs forever
-    property <float> animated : animated-workaround;
+    property <float> animated : 0.;
     animate animated {
         duration: 2s;
-        loop-count: -1;
+        iteration-count: -1.;
     }
-    property <float> animated-workaround; // the indirection is there to workaround a bug in sixtyfps 0.1.3
     callback ensure-start-animation;
     ensure-start-animation => {
-        if (animated < 0.001) { animated-workaround = 1; }
+        if (animated < 0.001) { animated = 1; }
     }
 
     Row {

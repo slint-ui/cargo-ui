@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/sixtyfpsui/cargo-ui/workflows/Rust/badge.svg)](https://github.com/sixtyfpsui/cargo-ui/actions)
 [![dependency status](https://deps.rs/repo/github/sixtyfpsui/cargo-ui/status.svg)](https://deps.rs/repo/github/sixtyfpsui/cargo-ui)
 
-This is a project to make a GUI for cargo, built using [SixtyFPS](https://github.com/sixtyfpsui/sixtyfps):
+This is a project to make a GUI for cargo, built using [Slint](https://github.com/sixtyfpsui/sixtyfps):
 
 ## Screnshots
 

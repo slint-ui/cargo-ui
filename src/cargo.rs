@@ -10,7 +10,7 @@ use cargo_metadata::{
 use futures::future::{Fuse, FusedFuture, FutureExt};
 use itertools::Itertools;
 use serde::Deserialize;
-use sixtyfps::{ComponentHandle, Model, ModelHandle, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
@@ -87,7 +87,7 @@ impl CargoWorker {
 
 async fn cargo_worker_loop(
     mut r: UnboundedReceiver<CargoMessage>,
-    handle: sixtyfps::Weak<CargoUI>,
+    handle: slint::Weak<CargoUI>,
 ) -> tokio::io::Result<()> {
     let mut manifest: Manifest = default_manifest().into();
     let mut metadata: Option<Metadata> = None;
@@ -319,18 +319,18 @@ async fn run_cargo(
     action: Action,
     features: FeatureSettings,
     manifest: Manifest,
-    handle: sixtyfps::Weak<CargoUI>,
+    handle: slint::Weak<CargoUI>,
 ) -> tokio::io::Result<()> {
     handle.clone().upgrade_in_event_loop(|h| {
         h.set_status("".into());
         h.set_is_building(true);
         let diagnostics_model = Rc::new(VecModel::<Diag>::default());
-        h.set_diagnostics(ModelHandle::from(
+        h.set_diagnostics(ModelRc::from(
             diagnostics_model.clone() as Rc<dyn Model<Data = Diag>>
         ));
     });
 
-    struct ResetIsBuilding(sixtyfps::Weak<CargoUI>);
+    struct ResetIsBuilding(slint::Weak<CargoUI>);
     impl Drop for ResetIsBuilding {
         fn drop(&mut self) {
             self.0
@@ -494,7 +494,7 @@ fn default_manifest() -> PathBuf {
     .unwrap_or_default()
 }
 
-async fn read_metadata(manifest: Manifest, handle: sixtyfps::Weak<CargoUI>) -> Option<Metadata> {
+async fn read_metadata(manifest: Manifest, handle: slint::Weak<CargoUI>) -> Option<Metadata> {
     let manifest_str = manifest
         .path_to_cargo_toml()
         .to_string_lossy()
@@ -529,7 +529,7 @@ fn apply_metadata(
     crates_index: Option<&crates_index::Index>,
     mut update_features: bool,
     package: &mut SharedString,
-    handle: sixtyfps::Weak<CargoUI>,
+    handle: slint::Weak<CargoUI>,
 ) {
     let mut packages = vec![SharedString::default()]; // keep one empty row
     let mut run_target = Vec::new();
@@ -605,19 +605,19 @@ fn apply_metadata(
         // The model always has at least two entries, one for all and the first package,
         // so enable multi-package selection only if there is something else to select.
         h.set_allow_package_selection(is_workspace);
-        h.set_packages(ModelHandle::from(
+        h.set_packages(ModelRc::from(
             Rc::new(VecModel::from(packages)) as Rc<dyn Model<Data = SharedString>>
         ));
-        h.set_extra_run(ModelHandle::from(
+        h.set_extra_run(ModelRc::from(
             Rc::new(VecModel::from(run_target)) as Rc<dyn Model<Data = SharedString>>
         ));
-        h.set_extra_test(ModelHandle::from(
+        h.set_extra_test(ModelRc::from(
             Rc::new(VecModel::from(test_target)) as Rc<dyn Model<Data = SharedString>>
         ));
         if let Some(features) = features {
             h.set_has_features(!features.is_empty());
             h.set_enable_default_features(true);
-            h.set_package_features(ModelHandle::from(
+            h.set_package_features(ModelRc::from(
                 Rc::new(VecModel::from(features)) as Rc<dyn Model<Data = Feature>>
             ));
         }
@@ -647,9 +647,9 @@ fn apply_metadata(
     }
 
     handle.upgrade_in_event_loop(move |h| {
-        let model = Rc::new(DepGraphModel::from(depgraph_tree));
+        let model = DepGraphModel::from(depgraph_tree);
         h.global::<DependencyData>()
-            .set_model(ModelHandle::new(model))
+            .set_model(ModelRc::new(model))
     });
 }
 
@@ -750,7 +750,7 @@ struct DepGraphModel {
     /// path to the location in the tree
     cache: RefCell<Vec<Vec<usize>>>,
     tree: Vec<TreeNode>,
-    notify: sixtyfps::ModelNotify,
+    notify: slint::ModelNotify,
 }
 
 impl From<Vec<TreeNode>> for DepGraphModel {
@@ -797,19 +797,23 @@ impl DepGraphModel {
     }
 }
 
-impl sixtyfps::Model for DepGraphModel {
+impl slint::Model for DepGraphModel {
     type Data = DependencyNode;
 
     fn row_count(&self) -> usize {
         self.cache.borrow().len()
     }
 
-    fn row_data(&self, row: usize) -> Self::Data {
-        let node = self.get_node(&self.cache.borrow()[row]);
-        node.node.borrow().clone()
+    fn row_data(&self, row: usize) -> Option<Self::Data> {
+        if row >= self.row_count() {
+            None
+        } else {
+            let node = self.get_node(&self.cache.borrow()[row]);
+            Some(node.node.borrow().clone())
+        }
     }
 
-    fn model_tracker(&self) -> &dyn sixtyfps::ModelTracker {
+    fn model_tracker(&self) -> &dyn slint::ModelTracker {
         &self.notify
     }
 
@@ -951,7 +955,7 @@ use crate::install::*;
 async fn install_completion(
     mut idx_path: PathBuf,
     query: SharedString,
-    handle: sixtyfps::Weak<CargoUI>,
+    handle: slint::Weak<CargoUI>,
 ) {
     let mut result = Vec::<SharedString>::new();
     if query.len() > 3 && query.is_ascii() {
@@ -975,7 +979,7 @@ async fn install_completion(
     }
     handle.upgrade_in_event_loop(move |ui| {
         ui.global::<CratesCompletionData>()
-            .set_completions(ModelHandle::from(
+            .set_completions(ModelRc::from(
                 Rc::new(VecModel::from(result)) as Rc<dyn Model<Data = SharedString>>
             ));
     });

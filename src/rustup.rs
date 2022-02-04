@@ -5,7 +5,7 @@
 use std::rc::Rc;
 
 use super::{CargoUI, Toolchain};
-use sixtyfps::{ComponentHandle, Model, ModelHandle, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
@@ -44,7 +44,7 @@ impl RustupWorker {
 
 async fn rustup_worker_loop(
     mut r: UnboundedReceiver<RustupMessage>,
-    handle: sixtyfps::Weak<CargoUI>,
+    handle: slint::Weak<CargoUI>,
 ) {
     let refresh_handle = tokio::task::spawn(refresh_toolchains(handle.clone()));
 
@@ -61,7 +61,7 @@ async fn rustup_worker_loop(
     }
 }
 
-async fn refresh_toolchains(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Result<()> {
+async fn refresh_toolchains(handle: slint::Weak<CargoUI>) -> tokio::io::Result<()> {
     handle.clone().upgrade_in_event_loop(|ui| {
         ui.set_toolchains_available(false);
     });
@@ -86,7 +86,7 @@ async fn refresh_toolchains(handle: sixtyfps::Weak<CargoUI>) -> tokio::io::Resul
     }
 
     handle.upgrade_in_event_loop(|ui| {
-        ui.set_toolchains(ModelHandle::from(
+        ui.set_toolchains(ModelRc::from(
             Rc::new(VecModel::from(toolchains)) as Rc<dyn Model<Data = Toolchain>>
         ));
         ui.set_toolchains_available(true);

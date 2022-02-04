@@ -4,10 +4,10 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-// FIXME: Re-enable clippy when sixtyfps generated code is clippy-clean.
+// FIXME: Re-enable clippy when slint generated code is clippy-clean.
 #[allow(clippy::all)]
 mod generated_code {
-    sixtyfps::include_modules!();
+    slint::include_modules!();
 }
 use cargo_metadata::DependencyKind;
 pub use generated_code::*;
@@ -17,7 +17,7 @@ mod install;
 mod rustup;
 
 use install::InstallJob;
-use sixtyfps::Model;
+use slint::Model;
 
 use crate::cargo::{CargoMessage, FeatureSettings};
 
@@ -124,18 +124,18 @@ fn main() {
         move || {
             let installed = cargo_ui.unwrap().global::<CargoInstallData>().get_crates();
             for i in 0..installed.row_count() {
-                let mut c = installed.row_data(i);
-                if !c.queued && !c.new_version.is_empty() {
-                    c.queued = true;
-                    cargo_channel
-                        .send(CargoMessage::Install(InstallJob::Install(c.name.clone())))
-                        .unwrap();
-                    // as_any() to workaround that set_row_data was not implemented in ModelHandle in SixtyFPS 0.1.3
-                    installed
-                        .as_any()
-                        .downcast_ref::<sixtyfps::VecModel<InstalledCrate>>()
-                        .unwrap()
-                        .set_row_data(i, c);
+                if let Some(mut c) = installed.row_data(i) {
+                    if !c.queued && !c.new_version.is_empty() {
+                        c.queued = true;
+                        cargo_channel
+                            .send(CargoMessage::Install(InstallJob::Install(c.name.clone())))
+                            .unwrap();
+                        installed
+                            .as_any()
+                            .downcast_ref::<slint::VecModel<InstalledCrate>>()
+                            .unwrap()
+                            .set_row_data(i, c);
+                    }
                 }
             }
         }
@@ -147,7 +147,7 @@ fn main() {
             let installed = cargo_ui.unwrap().global::<CargoInstallData>().get_crates();
             if let Some(installed) = installed
                 .as_any()
-                .downcast_ref::<sixtyfps::VecModel<InstalledCrate>>()
+                .downcast_ref::<slint::VecModel<InstalledCrate>>()
             {
                 installed.push(InstalledCrate {
                     name: c.clone(),
@@ -177,7 +177,7 @@ fn main() {
     rustup_worker.join().unwrap();
 }
 
-fn dep_kind_from_str(dep_kind: sixtyfps::SharedString) -> DependencyKind {
+fn dep_kind_from_str(dep_kind: slint::SharedString) -> DependencyKind {
     match dep_kind.as_str() {
         "dev" => DependencyKind::Development,
         "build" => DependencyKind::Build,

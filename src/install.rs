@@ -10,7 +10,7 @@ use std::{
 
 use super::*;
 use cargo_metadata::Version;
-use sixtyfps::{ModelHandle, SharedString, VecModel};
+use slint::{ModelRc, SharedString, VecModel};
 use tokio::io::{AsyncBufReadExt, BufReader};
 
 #[derive(Debug, Clone)]
@@ -29,7 +29,7 @@ impl InstallJob {
 }
 
 pub async fn refresh_install_list(
-    handle: sixtyfps::Weak<CargoUI>,
+    handle: slint::Weak<CargoUI>,
 ) -> tokio::io::Result<Vec<InstalledCrate>> {
     let mut cargo_install_command = cargo::cargo_command();
     cargo_install_command.arg("install").arg("--list");
@@ -81,7 +81,7 @@ pub async fn refresh_install_list(
     Ok(result)
 }
 
-fn report_error<T: Default>(_handle: sixtyfps::Weak<CargoUI>, arg: &str) -> T {
+fn report_error<T: Default>(_handle: slint::Weak<CargoUI>, arg: &str) -> T {
     /* TODO
     handle.clone().upgrade_in_event_loop(|ui| {
 
@@ -90,10 +90,7 @@ fn report_error<T: Default>(_handle: sixtyfps::Weak<CargoUI>, arg: &str) -> T {
     Default::default()
 }
 
-pub async fn process_install(
-    job: InstallJob,
-    handle: sixtyfps::Weak<CargoUI>,
-) -> std::io::Result<()> {
+pub async fn process_install(job: InstallJob, handle: slint::Weak<CargoUI>) -> std::io::Result<()> {
     let mut cmd = cargo::cargo_command();
     match &job {
         InstallJob::Install(cr) => cmd.arg("install").arg("--force").arg(cr.as_str()),
@@ -121,17 +118,17 @@ pub async fn process_install(
         handle.clone().upgrade_in_event_loop(move |cargo_ui| {
             let installed = cargo_ui.global::<CargoInstallData>().get_crates();
             for i in 0..installed.row_count() {
-                let mut c = installed.row_data(i);
-                if c.name == crate_name {
-                    c.progress = true;
-                    c.status = status.into();
-                    // as_any() to workaround that set_row_data was not implemented in ModelHandle in SixtyFPS 0.1.3
-                    installed
-                        .as_any()
-                        .downcast_ref::<VecModel<InstalledCrate>>()
-                        .unwrap()
-                        .set_row_data(i, c);
-                    return;
+                if let Some(mut c) = installed.row_data(i) {
+                    if c.name == crate_name {
+                        c.progress = true;
+                        c.status = status.into();
+                        installed
+                            .as_any()
+                            .downcast_ref::<VecModel<InstalledCrate>>()
+                            .unwrap()
+                            .set_row_data(i, c);
+                        return;
+                    }
                 }
             }
         });
@@ -144,7 +141,7 @@ pub fn apply_install_list(
     crates_index: Option<&crates_index::Index>,
     install_queue: &VecDeque<InstallJob>,
     currently_installing: &SharedString,
-    handle: sixtyfps::Weak<CargoUI>,
+    handle: slint::Weak<CargoUI>,
 ) {
     let mut set: HashSet<_> = install_queue.iter().map(|ci| ci.crate_name()).collect();
     if !currently_installing.is_empty() {
@@ -173,7 +170,7 @@ pub fn apply_install_list(
 
     handle.upgrade_in_event_loop(move |ui| {
         ui.global::<CargoInstallData>()
-            .set_crates(ModelHandle::from(
+            .set_crates(ModelRc::from(
                 Rc::new(VecModel::from(list)) as Rc<dyn Model<Data = InstalledCrate>>
             ));
     });
