@@ -12,12 +12,12 @@ repository = "https://github.com/sixtyfpsui/cargo-ui"
 resolver = "2"
 
 [features]
-slint-backend-gl = ["slint/backend-gl"]
 slint-backend-qt = ["slint/backend-qt"]
-wayland = ["slint/wayland"]
-x11 = ["slint/x11"]
+slint-backend-gl-all = ["slint/backend-gl-all"]
+slint-backend-gl-wayland = ["slint/backend-gl-wayland"]
+slint-backend-gl-x11 = ["slint/backend-gl-x11"]
 
-default = ["x11", "wayland", "slint-backend-qt", "slint-backend-gl"]
+default = ["slint-backend-qt", "slint-backend-gl-all"]
 
 [dependencies]
 anyhow = "1"
