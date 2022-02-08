@@ -80,13 +80,13 @@ CargoUI := Window {
                         font-size: 40px;
                     }
                     Text {
-                        text: "https://github.com/sixtyfpsui/cargo-ui";
+                        text: "https://github.com/slint-ui/cargo-ui";
                         color: blue;
                         TouchArea { clicked => { open-url(parent.text); } }
                     }
                     Text {
                         text: "License: GNU General Public License Version 3";
-                        TouchArea { clicked => { open-url("https://github.com/sixtyfpsui/cargo-ui/blob/master/LICENSE-GPL"); } }
+                        TouchArea { clicked => { open-url("https://github.com/slint-ui/cargo-ui/blob/master/LICENSE-GPL"); } }
                     }
 
                     Rectangle {}
@@ -94,7 +94,7 @@ CargoUI := Window {
                     HorizontalBox {
                         alignment: end;
                         vertical-stretch: 0;
-                        AboutSlint { TouchArea { clicked => { open-url("https://sixtyfps.io"); } } }
+                        AboutSlint { TouchArea { clicked => { open-url("https://slint-ui.com"); } } }
                     }
                 }
             }
