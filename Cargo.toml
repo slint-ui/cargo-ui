@@ -8,7 +8,7 @@ license = "GPL-3.0-only"
 description = "GUI for cargo"
 categories = ["development-tools::cargo-plugins"]
 keywords = ["cargo", "ui", "gui"]
-repository = "https://github.com/sixtyfpsui/cargo-ui"
+repository = "https://github.com/slint-ui/cargo-ui"
 resolver = "2"
 
 [features]
