@@ -1,9 +1,9 @@
 # A GUI for Cargo
 
-[![Build Status](https://github.com/sixtyfpsui/cargo-ui/workflows/Rust/badge.svg)](https://github.com/sixtyfpsui/cargo-ui/actions)
-[![dependency status](https://deps.rs/repo/github/sixtyfpsui/cargo-ui/status.svg)](https://deps.rs/repo/github/sixtyfpsui/cargo-ui)
+[![Build Status](https://github.com/slint-ui/cargo-ui/workflows/Rust/badge.svg)](https://github.com/slint-ui/cargo-ui/actions)
+[![dependency status](https://deps.rs/repo/github/slint-ui/cargo-ui/status.svg)](https://deps.rs/repo/github/slint-ui/cargo-ui)
 
-This is a project to make a GUI for cargo, built using [Slint](https://github.com/sixtyfpsui/sixtyfps):
+This is a project to make a GUI for cargo, built using [Slint](https://github.com/slint-ui/slint):
 
 ## Screnshots
 
@@ -21,7 +21,7 @@ cargo install cargo-ui
 
 Alternatively, you can download one of our pre-built binaries for Linux or Windows:
 
-1. Open <https://github.com/sixtyfpsui/cargo-ui/releases>
+1. Open <https://github.com/slint-ui/cargo-ui/releases>
 2. Click on the latest release
 3. From "Assets" download either `cargo-ui-linux.tar.gz` for a Linux x86-64 binary
    or `cargo-ui-windows.zip` for a Windows x86-64 binary.
@@ -52,7 +52,7 @@ macOS:
 
 
 **For the native style**:  (optional)
- * The native style requires Qt >= 5.15, see <https://github.com/sixtyfpsui/sixtyfps/blob/master/docs/install_qt.md>.
+ * The native style requires Qt >= 5.15, see <https://github.com/slint-ui/slint/blob/master/docs/install_qt.md>.
    If Qt is not present while building, the *fluent* style will be used as a fallback.
 
 ## Vision
