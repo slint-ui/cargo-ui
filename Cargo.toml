@@ -12,7 +12,7 @@ repository = "https://github.com/sixtyfpsui/cargo-ui"
 resolver = "2"
 
 [features]
-slint-backend-gl = ["slint/backend-qt"]
+slint-backend-gl = ["slint/backend-gl"]
 slint-backend-qt = ["slint/backend-qt"]
 wayland = ["slint/wayland"]
 x11 = ["slint/x11"]
