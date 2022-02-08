@@ -25,7 +25,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: build
-            args: --verbose --no-default-features --features sixtyfps-backend-qt --release
+            args: --verbose --no-default-features --features slint-backend-qt --release
       - name: Create artifact directory
         run: |
             mkdir pkg
@@ -43,8 +43,8 @@ jobs:
             mkdir 3rdparty-licenses
             cd ..
             cd ..
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/LICENSE.QT pkg/cargo-ui/3rdparty-licenses/
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/LICENSE.QT pkg/cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
             cp ../LICENSE-* pkg/cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o pkg/cargo-ui/3rdparty-licenses/index.html
       - name: Upload artifact
@@ -82,12 +82,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: build
-            args: --verbose --no-default-features --features sixtyfps-backend-qt --release
+            args: --verbose --no-default-features --features slint-backend-qt --release
       - name: Create artifact directory
         run: |
             mkdir -p cargo-ui/3rdparty-licenses
             cp ./target/release/cargo-ui ./cargo-ui/
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
             cp ./LICENSE-* cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
       - name: Tar artifacts to preserve permissions
@@ -137,13 +137,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: build
-            args: --verbose --target x86_64-apple-darwin --no-default-features --features sixtyfps-backend-qt --release
+            args: --verbose --target x86_64-apple-darwin --no-default-features --features slint-backend-qt --release
 # aarch64 doesn't cross-build because an aarch64 build of openssl can't be found
 #      - name: Build aarch64
 #        uses: actions-rs/cargo@v1
 #        with:
 #            command: build
-#            args: --verbose --target aarch64-apple-darwin --no-default-features --features sixtyfps-backend-qt --release
+#            args: --verbose --target aarch64-apple-darwin --no-default-features --features slint-backend-qt --release
 #            lipo -create -output bin/cargo-ui target/x86_64-apple-darwin/release/cargo-ui target/aarch64-apple-darwin/release/cargo-ui
       - name: Create artifact directory
         run: |
@@ -158,7 +158,7 @@ jobs:
             mkdir -p ./plugins/platforms
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
             cd ..
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/sixtyfps-rendering-backend-qt-0.1.4/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
             cp ./LICENSE-* cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
       - name: Tar artifacts to preserve permissions
