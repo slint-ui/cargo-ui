@@ -74,7 +74,7 @@ jobs:
         with:
           version: 5.15.2
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
-      - uses: Swatinem/rust-cache@v1            
+      - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/install@v0.1
         with:
           crate: cargo-about
@@ -90,6 +90,7 @@ jobs:
             cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
             cp ./LICENSE-* cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
+            rm -r ./target/release/deps
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-linux.tar.gz cargo-ui
       - name: Upload artifact
@@ -97,6 +98,12 @@ jobs:
         with:
             name: cargo-ui-linux
             path: cargo-ui-linux.tar.gz
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+            name: target-linux
+            path: target
 
   build_macos:
     runs-on: macOS-11
