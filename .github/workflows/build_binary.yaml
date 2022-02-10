@@ -3,6 +3,9 @@ name: Build cargo-ui binary
 on:
   workflow_dispatch:
 
+env:
+  SLINT_STYLE: native
+
 jobs:
   build_windows:
     runs-on: windows-latest
@@ -82,7 +85,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: build
-            args: -vv --no-default-features --features slint-backend-qt --release
+            args: --verbose --no-default-features --features slint-backend-qt --release
       - name: Create artifact directory
         run: |
             mkdir -p cargo-ui/3rdparty-licenses

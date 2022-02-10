@@ -9,7 +9,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  SLINT_STYLE: native
 
 jobs:
   build:
