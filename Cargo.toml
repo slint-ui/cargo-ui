@@ -36,4 +36,4 @@ tokio = { version = "1.16.1", features= ["full"] }
 toml_edit = "0.13.4"
 
 [build-dependencies]
-slint-build = { version = "0.2.0" }
+slint-build = { version = "0.2.0", git = "https://github.com/slint-ui/slint", branch="olivier/wip/debug" }
