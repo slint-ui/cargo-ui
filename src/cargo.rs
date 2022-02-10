@@ -648,8 +648,7 @@ fn apply_metadata(
 
     handle.upgrade_in_event_loop(move |h| {
         let model = DepGraphModel::from(depgraph_tree);
-        h.global::<DependencyData>()
-            .set_model(ModelRc::new(model))
+        h.global::<DependencyData>().set_model(ModelRc::new(model))
     });
 }
 

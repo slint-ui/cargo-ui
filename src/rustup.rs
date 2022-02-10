@@ -42,10 +42,7 @@ impl RustupWorker {
     }
 }
 
-async fn rustup_worker_loop(
-    mut r: UnboundedReceiver<RustupMessage>,
-    handle: slint::Weak<CargoUI>,
-) {
+async fn rustup_worker_loop(mut r: UnboundedReceiver<RustupMessage>, handle: slint::Weak<CargoUI>) {
     let refresh_handle = tokio::task::spawn(refresh_toolchains(handle.clone()));
 
     loop {

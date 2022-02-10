@@ -169,9 +169,8 @@ pub fn apply_install_list(
     }
 
     handle.upgrade_in_event_loop(move |ui| {
-        ui.global::<CargoInstallData>()
-            .set_crates(ModelRc::from(
-                Rc::new(VecModel::from(list)) as Rc<dyn Model<Data = InstalledCrate>>
-            ));
+        ui.global::<CargoInstallData>().set_crates(ModelRc::from(
+            Rc::new(VecModel::from(list)) as Rc<dyn Model<Data = InstalledCrate>>
+        ));
     });
 }
