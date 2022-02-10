@@ -2,7 +2,7 @@
 name = "cargo-ui"
 version = "0.3.0"
 authors = ["SixtyFPS <info@sixtyfps.io>"]
-edition = "2018"
+edition = "2021"
 build = "build.rs"
 license = "GPL-3.0-only"
 description = "GUI for cargo"
