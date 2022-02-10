@@ -1,4 +1,4 @@
-/* Copyright © 2021 SixtyFPS GmbH <info@sixtyfps.info>
+/* Copyright © SixtyFPS GmbH <info@slint-ui.com>
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
