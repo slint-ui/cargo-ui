@@ -46,8 +46,8 @@ jobs:
             mkdir 3rdparty-licenses
             cd ..
             cd ..
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/LICENSE.QT pkg/cargo-ui/3rdparty-licenses/
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.2/LICENSE.QT pkg/cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.2/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
             cp ../LICENSE-* pkg/cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o pkg/cargo-ui/3rdparty-licenses/index.html
       - name: Upload artifact
@@ -90,7 +90,7 @@ jobs:
         run: |
             mkdir -p cargo-ui/3rdparty-licenses
             cp ./target/release/cargo-ui ./cargo-ui/
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.2/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.2/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
             cp ./LICENSE-* cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
       - name: Tar artifacts to preserve permissions
@@ -155,7 +155,7 @@ jobs:
             mkdir -p ./plugins/platforms
             cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
             cd ..
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.0/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.2/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.2/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
             cp ./LICENSE-* cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
       - name: Tar artifacts to preserve permissions
