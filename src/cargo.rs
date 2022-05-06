@@ -960,11 +960,17 @@ async fn install_completion(
     if query.len() > 3 && query.is_ascii() {
         // `crates_index` does not allow to make search in a reasonable time, so I had to implement that myself
         // This only handle crates that have 4 or more characters
-        idx_path.push(&query[0..2]);
-        idx_path.push(&query[2..4]);
-        if let Ok(mut rd) = tokio::fs::read_dir(idx_path).await {
-            while let Ok(Some(entry)) = rd.next_entry().await {
-                if let Some(name) = entry.file_name().to_str() {
+        let _ = git2::Repository::open(idx_path).and_then(|r| {
+            let head = r
+                .refname_to_id("FETCH_HEAD")
+                .or_else(|_| r.refname_to_id("HEAD"))?;
+            let tree = r.find_commit(head)?.tree()?;
+            let mut path = PathBuf::new();
+            path.push(&query[0..2]);
+            path.push(&query[2..4]);
+            let tree = tree.get_path(&path)?.to_object(&r)?.peel_to_tree()?;
+            for entry in tree.iter() {
+                if let Some(name) = dbg!(entry.name()) {
                     if name.starts_with(query.as_str()) {
                         result.push(name.into());
                         if result.len() > 50 {
@@ -974,7 +980,8 @@ async fn install_completion(
                     }
                 }
             }
-        }
+            Ok(())
+        });
     }
     handle.upgrade_in_event_loop(move |ui| {
         ui.global::<CratesCompletionData>()
