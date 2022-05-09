@@ -951,11 +951,7 @@ fn dependency_add(
 
 use crate::install::*;
 
-async fn install_completion(
-    mut idx_path: PathBuf,
-    query: SharedString,
-    handle: slint::Weak<CargoUI>,
-) {
+async fn install_completion(idx_path: PathBuf, query: SharedString, handle: slint::Weak<CargoUI>) {
     let mut result = Vec::<SharedString>::new();
     if query.len() > 3 && query.is_ascii() {
         // `crates_index` does not allow to make search in a reasonable time, so I had to implement that myself
