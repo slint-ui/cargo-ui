@@ -970,7 +970,7 @@ async fn install_completion(
             path.push(&query[2..4]);
             let tree = tree.get_path(&path)?.to_object(&r)?.peel_to_tree()?;
             for entry in tree.iter() {
-                if let Some(name) = dbg!(entry.name()) {
+                if let Some(name) = entry.name() {
                     if name.starts_with(query.as_str()) {
                         result.push(name.into());
                         if result.len() > 50 {
