@@ -31,10 +31,10 @@ rfd = { version = "0.8.2", default-features = false, features = [ "xdg-portal" ]
 serde = "1.0.136"
 serde_json = "1.0.78"
 shlex = "1.1"
-slint = { version = "0.2.3", default-features = false, features = [ "compat-0-2-0" ] }
+slint = { version = "0.2.4", default-features = false, features = [ "compat-0-2-0" ] }
 tokio = { version = "1.16.1", features= ["full"] }
 toml_edit = "0.14.3"
 git2 = "0.14.3"
 
 [build-dependencies]
-slint-build = { version = "0.2.3" }
+slint-build = { version = "0.2.4" }
