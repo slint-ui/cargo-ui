@@ -36,9 +36,9 @@ jobs:
             mkdir cargo-ui
             cd cargo-ui
             cp ..\..\target/release/cargo-ui.exe ./
-            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt5Core.dll ./
-            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt5Gui.dll ./
-            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt5Widgets.dll ./
+            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt6Core.dll ./
+            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt6Gui.dll ./
+            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt6Widgets.dll ./
             cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt6Svg.dll ./
             mkdir .\plugins\platforms
             cp ..\..\..\Qt\6.2.4\msvc2019_64\plugins\platforms\qwindows.dll ./plugins/platforms
