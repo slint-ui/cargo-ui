@@ -19,7 +19,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
-          version: 5.15.2
+          version: 6.2.4
 #      - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/install@v0.1
         with:
@@ -36,13 +36,16 @@ jobs:
             mkdir cargo-ui
             cd cargo-ui
             cp ..\..\target/release/cargo-ui.exe ./
-            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Core.dll ./
-            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Gui.dll ./
-            cp ..\..\..\Qt\5.15.2\msvc2019_64\bin/Qt5Widgets.dll ./
+            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt5Core.dll ./
+            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt5Gui.dll ./
+            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt5Widgets.dll ./
+            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt6Svg.dll ./
             mkdir .\plugins\platforms
-            cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\platforms\qwindows.dll ./plugins/platforms
+            cp ..\..\..\Qt\6.2.4\msvc2019_64\plugins\platforms\qwindows.dll ./plugins/platforms
             mkdir .\plugins\styles
-            cp ..\..\..\Qt\5.15.2\msvc2019_64\plugins\styles\qwindowsvistastyle.dll ./plugins/styles
+            cp ..\..\..\Qt\6.2.4\msvc2019_64\plugins\styles\qwindowsvistastyle.dll ./plugins/styles
+            mkdir .\plugins\imageformats
+            cp ..\..\..\Qt\6.2.4\msvc2019_64\plugins\imageformats\qsvg.dll ./plugins/imageformats
             mkdir 3rdparty-licenses
             cd ..
             cd ..
