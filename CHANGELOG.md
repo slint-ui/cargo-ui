@@ -1,10 +1,10 @@
 # Changelog
 
-## [0.3.2] - 2022-05-09
+## [0.3.2] - 2022-05-10
 
  * Fix auto-completion in the install and add dependency line edit
+ * Disable/hide widgets under panes so hidden widget don't get the focus.
  * Upate dependencies
-
 
 ## [0.3.1] - 2022-02-10
 
