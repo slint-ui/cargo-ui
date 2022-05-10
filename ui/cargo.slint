@@ -291,10 +291,12 @@ export CargoView := GridBox {
         HorizontalLayout {
             colspan: 3;
             le_manifest := LineEdit {
+                enabled: !deptree-pane-visible;
                 accepted => { root.reload-manifest(le_manifest.text); }
                 horizontal_stretch: 1;
             }
             open_button := Button {
+                enabled: !deptree-pane-visible;
                 text: "📂";
                 clicked => { root.show-open-dialog(); }
             }
@@ -309,17 +311,17 @@ export CargoView := GridBox {
         }
         HorizontalLayout {
             if allow-package-selection: ComboBox {
+                enabled: !deptree-pane-visible && root.workspace-valid;
                 model: packages;
-                enabled: root.workspace-valid;
                 current_value <=> current-package;
                 selected(pkg) => { root.package-selected(pkg); }
             }
         }
         Text { text: "Profile: "; vertical-alignment: center; horizontal-alignment: right; }
         mode_cb := ComboBox {
+            enabled: !deptree-pane-visible && root.workspace-valid;
             current_value: "debug";
             model: ["debug", "release"];
-            enabled: root.workspace-valid;
         }
         //Text { text: "Toolchain: "; }
         //profile_cb := ComboBox { model: ["stable", "nightly"]; }
@@ -331,8 +333,8 @@ export CargoView := GridBox {
 
     Row {
         Button {
+            enabled: !deptree-pane-visible && root.workspace-valid;
             text: "🚀 Run";
-            enabled: root.workspace-valid;
             clicked => {
                 build-pane-visible = true;
                 action({
@@ -345,22 +347,22 @@ export CargoView := GridBox {
             }
         }
         bin_cb := ComboBox {
+            enabled: !deptree-pane-visible && root.workspace-valid;
             model: extra-run;
-            enabled: root.workspace-valid;
         }
     }
     Row {
         arguments-le := LineEdit {
+            enabled: !deptree-pane-visible && root.workspace-valid;
             colspan: 2;
             placeholder-text: "Command line arguments";
-            enabled: root.workspace-valid;
         }
     }
 
     Row {
         Button {
+            enabled: !deptree-pane-visible && root.workspace-valid;
             text: "🏗️ Build";
-            enabled: root.workspace-valid;
             clicked => {
                 build-pane-visible = true;
                 action({
@@ -378,8 +380,8 @@ export CargoView := GridBox {
 
     Row {
         Button {
+            enabled: !deptree-pane-visible && root.workspace-valid;
             text: "👍 Check";
-            enabled: root.workspace-valid;
             clicked => {
                 build-pane-visible = true;
                 action({
@@ -397,8 +399,8 @@ export CargoView := GridBox {
 
     Row {
         Button {
+            enabled: !deptree-pane-visible && root.workspace-valid;
             text: "🧪 Test";
-            enabled: root.workspace-valid;
             clicked => {
                 build-pane-visible = true;
                 action({
@@ -411,12 +413,13 @@ export CargoView := GridBox {
         }
         test_cb := ComboBox {
             model: extra-test;
-            enabled: root.workspace-valid && root.extra-test.length > 0;
+            enabled: !deptree-pane-visible && root.workspace-valid && root.extra-test.length > 0;
         }
     }
 
     Row {
         Button {
+            enabled: !deptree-pane-visible;
             colspan: 2;
             text: "🌳 Show Dependencies";
             clicked => { deptree-pane-visible = true; }
@@ -442,16 +445,16 @@ export CargoView := GridBox {
         title: "Features";
         VerticalBox {
             CheckBox {
+                enabled: !deptree-pane-visible;
                 text: "Enable Default Features";
                 checked <=> root.enable-default-features;
-                enabled: true;
             }
             if has-features: ListView {
                 for feature in package-features:  HorizontalLayout {
                     CheckBox {
+                        enabled: !deptree-pane-visible && (!feature.enabled_by_default || !root.enable-default-features);
                         text: feature.name + (!enabled ? " (enabled by default)" : "");
                         checked: feature.enabled;
-                        enabled: !feature.enabled_by_default || !root.enable-default-features;
                         toggled => {
                             feature.enabled = checked;
                         }
