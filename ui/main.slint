@@ -55,6 +55,9 @@ CargoUI := Window {
 
     VerticalBox {
         TabWidget {
+            // hide the widgets from the tab focus handler when covered:
+            visible: !(is-building || build-pane-visible);
+
             Tab {
                 title: "Project / Workspace";
                 cargo-view := CargoView {
