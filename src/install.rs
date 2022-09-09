@@ -9,7 +9,7 @@ use std::{
 };
 
 use super::*;
-use cargo_metadata::Version;
+use cargo_metadata::semver::Version;
 use slint::{ModelRc, SharedString, VecModel};
 use tokio::io::{AsyncBufReadExt, BufReader};
 
@@ -152,7 +152,7 @@ pub fn apply_install_list(
         cr.new_version = crates_index
             .and_then(|idx| idx.crate_(&cr.name))
             .and_then(|from_idx| {
-                let new_version = from_idx.highest_stable_version()?.version();
+                let new_version = from_idx.highest_normal_version()?.version();
                 (Version::from_str(new_version).ok()?
                     > Version::from_str(cr.version.strip_prefix("v")?).ok()?)
                 .then(|| new_version)

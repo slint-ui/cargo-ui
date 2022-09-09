@@ -28,7 +28,7 @@ fn main() {
     let rustup_worker = rustup::RustupWorker::new(&cargo_ui);
 
     cargo_ui.on_open_url(|url| {
-        open::that_in_background(url.as_str());
+        open::that(url.as_str()).ok();
     });
     cargo_ui.set_cargo_ui_version(env!("CARGO_PKG_VERSION").into());
 

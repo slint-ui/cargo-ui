@@ -5,7 +5,7 @@
 use super::{Action, CargoUI, CratesCompletionData, DependencyData, DependencyNode, Diag, Feature};
 use anyhow::Context;
 use cargo_metadata::{
-    diagnostic::DiagnosticLevel, DependencyKind, Metadata, Node, PackageId, Version,
+    diagnostic::DiagnosticLevel, semver::Version, DependencyKind, Metadata, Node, PackageId,
 };
 use futures::future::{Fuse, FusedFuture, FutureExt};
 use itertools::Itertools;
@@ -243,7 +243,7 @@ async fn cargo_worker_loop(
                     match dependency_add(
                         pkg.manifest_path.as_ref(),
                         crate_name.as_str(),
-                        cr.highest_stable_version()
+                        cr.highest_normal_version()
                             .unwrap_or(cr.highest_version())
                             .version(),
                         dep_kind,
@@ -274,7 +274,7 @@ async fn cargo_worker_loop(
                     match dependency_upgrade_to_version(
                         pkg.manifest_path.as_ref(),
                         crate_name.as_str(),
-                        cr.highest_stable_version()
+                        cr.highest_normal_version()
                             .unwrap_or(cr.highest_version())
                             .version(),
                         dep_kind,
@@ -688,7 +688,7 @@ fn build_dep_tree(
     let outdated = indentation == 1
         && crates_index
             .and_then(|idx| idx.crate_(&package.name))
-            .and_then(|c| c.highest_stable_version().cloned())
+            .and_then(|c| c.highest_normal_version().cloned())
             .and_then(|v| Version::from_str(v.version()).ok())
             .map_or(false, |latest| latest > package.version);
     let dep_kind = node_dep
