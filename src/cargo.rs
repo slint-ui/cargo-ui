@@ -217,9 +217,12 @@ async fn cargo_worker_loop(
                             .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
                         Err(e) => {
                             dbg!(e);
-                            handle.clone().upgrade_in_event_loop(|h| {
-                                h.set_status("Not yet supported".into());
-                            });
+                            handle
+                                .clone()
+                                .upgrade_in_event_loop(|h| {
+                                    h.set_status("Not yet supported".into());
+                                })
+                                .unwrap();
                         }
                     }
                 }
@@ -251,9 +254,12 @@ async fn cargo_worker_loop(
                         Ok(()) => read_metadata_future
                             .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
                         Err(e) => {
-                            handle.clone().upgrade_in_event_loop(move |h| {
-                                h.set_status(format!("{}", e).into());
-                            });
+                            handle
+                                .clone()
+                                .upgrade_in_event_loop(move |h| {
+                                    h.set_status(format!("{}", e).into());
+                                })
+                                .unwrap();
                         }
                     }
                 }
@@ -283,9 +289,12 @@ async fn cargo_worker_loop(
                             .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
                         Err(e) => {
                             dbg!(e);
-                            handle.clone().upgrade_in_event_loop(|h| {
-                                h.set_status("Not yet supported".into());
-                            });
+                            handle
+                                .clone()
+                                .upgrade_in_event_loop(|h| {
+                                    h.set_status("Not yet supported".into());
+                                })
+                                .unwrap();
                         }
                     }
                 }
@@ -321,14 +330,17 @@ async fn run_cargo(
     manifest: Manifest,
     handle: slint::Weak<CargoUI>,
 ) -> tokio::io::Result<()> {
-    handle.clone().upgrade_in_event_loop(|h| {
-        h.set_status("".into());
-        h.set_is_building(true);
-        let diagnostics_model = Rc::new(VecModel::<Diag>::default());
-        h.set_diagnostics(ModelRc::from(
-            diagnostics_model.clone() as Rc<dyn Model<Data = Diag>>
-        ));
-    });
+    handle
+        .clone()
+        .upgrade_in_event_loop(|h| {
+            h.set_status("".into());
+            h.set_is_building(true);
+            let diagnostics_model = Rc::new(VecModel::<Diag>::default());
+            h.set_diagnostics(ModelRc::from(
+                diagnostics_model.clone() as Rc<dyn Model<Data = Diag>>
+            ));
+        })
+        .unwrap();
 
     struct ResetIsBuilding(slint::Weak<CargoUI>);
     impl Drop for ResetIsBuilding {
@@ -336,6 +348,7 @@ async fn run_cargo(
             self.0
                 .clone()
                 .upgrade_in_event_loop(move |h| h.set_is_building(false))
+                .unwrap()
         }
     }
     let _reset_is_building = ResetIsBuilding(handle.clone());
@@ -368,10 +381,13 @@ async fn run_cargo(
         if let Some(args) = shlex::split(&action.arguments) {
             cargo_command.args(args);
         } else {
-            handle.clone().upgrade_in_event_loop(move |h| {
-                h.set_status("Error parsing command line arguments".into());
-                h.set_build_pane_visible(false);
-            });
+            handle
+                .clone()
+                .upgrade_in_event_loop(move |h| {
+                    h.set_status("Error parsing command line arguments".into());
+                    h.set_build_pane_visible(false);
+                })
+                .unwrap();
             return Ok(());
         }
     }
@@ -390,7 +406,7 @@ async fn run_cargo(
                 let line = if let Some(line) = line? { line } else { break };
                 handle.clone().upgrade_in_event_loop(move |h| {
                     h.set_status(line.into());
-                });
+                }).unwrap();
             }
             line = stdout.next_line() => {
                 let line = if let Some(line) = line? { line } else { break };
@@ -403,45 +419,47 @@ async fn run_cargo(
                         let model_handle = h.get_diagnostics();
                         let model = model_handle.as_any().downcast_ref::<VecModel<Diag>>().unwrap();
                         model.push(diag);
-                    });
+                    }).unwrap();
                 }
             }
         }
     }
 
-    handle.upgrade_in_event_loop(move |h| {
-        h.set_status("Finished".into());
-        let model_handle = h.get_diagnostics();
-        let model = model_handle
-            .as_any()
-            .downcast_ref::<VecModel<Diag>>()
-            .unwrap();
+    handle
+        .upgrade_in_event_loop(move |h| {
+            h.set_status("Finished".into());
+            let model_handle = h.get_diagnostics();
+            let model = model_handle
+                .as_any()
+                .downcast_ref::<VecModel<Diag>>()
+                .unwrap();
 
-        if model.row_count() == 0 {
-            h.set_build_pane_visible(false);
-        }
+            if model.row_count() == 0 {
+                h.set_build_pane_visible(false);
+            }
 
-        let error_count = model
-            .iter()
-            .filter(|diagnostic| diagnostic.level == 1)
-            .count();
-        let warning_count = model
-            .iter()
-            .filter(|diagnostic| diagnostic.level == 2)
-            .count();
+            let error_count = model
+                .iter()
+                .filter(|diagnostic| diagnostic.level == 1)
+                .count();
+            let warning_count = model
+                .iter()
+                .filter(|diagnostic| diagnostic.level == 2)
+                .count();
 
-        let result = if error_count == 0 && warning_count == 0 {
-            "✅".into()
-        } else {
-            format!("{} errors; {} warnings", error_count, warning_count).into()
-        };
+            let result = if error_count == 0 && warning_count == 0 {
+                "✅".into()
+            } else {
+                format!("{} errors; {} warnings", error_count, warning_count).into()
+            };
 
-        match action.command.as_str() {
-            "build" => h.set_build_results(result),
-            "check" => h.set_check_results(result),
-            _ => {}
-        }
-    });
+            match action.command.as_str() {
+                "build" => h.set_build_results(result),
+                "check" => h.set_check_results(result),
+                _ => {}
+            }
+        })
+        .unwrap();
 
     Ok(())
 }
@@ -500,25 +518,32 @@ async fn read_metadata(manifest: Manifest, handle: slint::Weak<CargoUI>) -> Opti
         .to_string_lossy()
         .as_ref()
         .into();
-    handle.clone().upgrade_in_event_loop(move |h| {
-        h.set_workspace_valid(false);
-        h.set_manifest_path(manifest_str);
-        h.set_status("Loading metadata from Cargo.toml...".into());
-    });
+    handle
+        .clone()
+        .upgrade_in_event_loop(move |h| {
+            h.set_workspace_valid(false);
+            h.set_manifest_path(manifest_str);
+            h.set_status("Loading metadata from Cargo.toml...".into());
+        })
+        .unwrap();
 
     let mut cmd = cargo_metadata::MetadataCommand::new();
     cmd.manifest_path(manifest.path_to_cargo_toml());
     match cmd.exec() {
         Ok(metadata) => {
-            handle.upgrade_in_event_loop(move |h| {
-                h.set_status("Cargo.toml loaded".into());
-            });
+            handle
+                .upgrade_in_event_loop(move |h| {
+                    h.set_status("Cargo.toml loaded".into());
+                })
+                .unwrap();
             Some(metadata)
         }
         Err(e) => {
-            handle.upgrade_in_event_loop(move |h| {
-                h.set_status(format!("{}", e).into());
-            });
+            handle
+                .upgrade_in_event_loop(move |h| {
+                    h.set_status(format!("{}", e).into());
+                })
+                .unwrap();
             None
         }
     }
@@ -598,31 +623,34 @@ fn apply_metadata(
         }
     }
     let pkg = package.clone();
-    handle.clone().upgrade_in_event_loop(move |h| {
-        h.global::<DependencyData>()
-            .set_package_selected(!is_workspace || !pkg.is_empty());
-        h.set_current_package(pkg);
-        // The model always has at least two entries, one for all and the first package,
-        // so enable multi-package selection only if there is something else to select.
-        h.set_allow_package_selection(is_workspace);
-        h.set_packages(ModelRc::from(
-            Rc::new(VecModel::from(packages)) as Rc<dyn Model<Data = SharedString>>
-        ));
-        h.set_extra_run(ModelRc::from(
-            Rc::new(VecModel::from(run_target)) as Rc<dyn Model<Data = SharedString>>
-        ));
-        h.set_extra_test(ModelRc::from(
-            Rc::new(VecModel::from(test_target)) as Rc<dyn Model<Data = SharedString>>
-        ));
-        if let Some(features) = features {
-            h.set_has_features(!features.is_empty());
-            h.set_enable_default_features(true);
-            h.set_package_features(ModelRc::from(
-                Rc::new(VecModel::from(features)) as Rc<dyn Model<Data = Feature>>
+    handle
+        .clone()
+        .upgrade_in_event_loop(move |h| {
+            h.global::<DependencyData>()
+                .set_package_selected(!is_workspace || !pkg.is_empty());
+            h.set_current_package(pkg);
+            // The model always has at least two entries, one for all and the first package,
+            // so enable multi-package selection only if there is something else to select.
+            h.set_allow_package_selection(is_workspace);
+            h.set_packages(ModelRc::from(
+                Rc::new(VecModel::from(packages)) as Rc<dyn Model<Data = SharedString>>
             ));
-        }
-        h.set_workspace_valid(true);
-    });
+            h.set_extra_run(ModelRc::from(
+                Rc::new(VecModel::from(run_target)) as Rc<dyn Model<Data = SharedString>>
+            ));
+            h.set_extra_test(ModelRc::from(
+                Rc::new(VecModel::from(test_target)) as Rc<dyn Model<Data = SharedString>>
+            ));
+            if let Some(features) = features {
+                h.set_has_features(!features.is_empty());
+                h.set_enable_default_features(true);
+                h.set_package_features(ModelRc::from(
+                    Rc::new(VecModel::from(features)) as Rc<dyn Model<Data = Feature>>
+                ));
+            }
+            h.set_workspace_valid(true);
+        })
+        .unwrap();
 
     let mut depgraph_tree = Vec::new();
     if let Some(resolve) = &metadata.resolve {
@@ -646,10 +674,12 @@ fn apply_metadata(
         }
     }
 
-    handle.upgrade_in_event_loop(move |h| {
-        let model = DepGraphModel::from(depgraph_tree);
-        h.global::<DependencyData>().set_model(ModelRc::new(model))
-    });
+    handle
+        .upgrade_in_event_loop(move |h| {
+            let model = DepGraphModel::from(depgraph_tree);
+            h.global::<DependencyData>().set_model(ModelRc::new(model))
+        })
+        .unwrap();
 }
 
 fn show_open_dialog(manifest: Manifest) -> Manifest {
@@ -979,10 +1009,12 @@ async fn install_completion(idx_path: PathBuf, query: SharedString, handle: slin
             Ok(())
         });
     }
-    handle.upgrade_in_event_loop(move |ui| {
-        ui.global::<CratesCompletionData>()
-            .set_completions(ModelRc::from(
-                Rc::new(VecModel::from(result)) as Rc<dyn Model<Data = SharedString>>
-            ));
-    });
+    handle
+        .upgrade_in_event_loop(move |ui| {
+            ui.global::<CratesCompletionData>()
+                .set_completions(ModelRc::from(
+                    Rc::new(VecModel::from(result)) as Rc<dyn Model<Data = SharedString>>
+                ));
+        })
+        .unwrap();
 }

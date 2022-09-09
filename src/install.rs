@@ -115,23 +115,26 @@ pub async fn process_install(job: InstallJob, handle: slint::Weak<CargoUI>) -> s
             }
         };
         let crate_name = job.crate_name().clone();
-        handle.clone().upgrade_in_event_loop(move |cargo_ui| {
-            let installed = cargo_ui.global::<CargoInstallData>().get_crates();
-            for i in 0..installed.row_count() {
-                if let Some(mut c) = installed.row_data(i) {
-                    if c.name == crate_name {
-                        c.progress = true;
-                        c.status = status.into();
-                        installed
-                            .as_any()
-                            .downcast_ref::<VecModel<InstalledCrate>>()
-                            .unwrap()
-                            .set_row_data(i, c);
-                        return;
+        handle
+            .clone()
+            .upgrade_in_event_loop(move |cargo_ui| {
+                let installed = cargo_ui.global::<CargoInstallData>().get_crates();
+                for i in 0..installed.row_count() {
+                    if let Some(mut c) = installed.row_data(i) {
+                        if c.name == crate_name {
+                            c.progress = true;
+                            c.status = status.into();
+                            installed
+                                .as_any()
+                                .downcast_ref::<VecModel<InstalledCrate>>()
+                                .unwrap()
+                                .set_row_data(i, c);
+                            return;
+                        }
                     }
                 }
-            }
-        });
+            })
+            .unwrap();
     }
     Ok(())
 }
@@ -168,9 +171,11 @@ pub fn apply_install_list(
         })
     }
 
-    handle.upgrade_in_event_loop(move |ui| {
-        ui.global::<CargoInstallData>().set_crates(ModelRc::from(
-            Rc::new(VecModel::from(list)) as Rc<dyn Model<Data = InstalledCrate>>
-        ));
-    });
+    handle
+        .upgrade_in_event_loop(move |ui| {
+            ui.global::<CargoInstallData>().set_crates(ModelRc::from(
+                Rc::new(VecModel::from(list)) as Rc<dyn Model<Data = InstalledCrate>>,
+            ));
+        })
+        .unwrap();
 }

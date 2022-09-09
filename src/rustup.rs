@@ -59,9 +59,12 @@ async fn rustup_worker_loop(mut r: UnboundedReceiver<RustupMessage>, handle: sli
 }
 
 async fn refresh_toolchains(handle: slint::Weak<CargoUI>) -> tokio::io::Result<()> {
-    handle.clone().upgrade_in_event_loop(|ui| {
-        ui.set_toolchains_available(false);
-    });
+    handle
+        .clone()
+        .upgrade_in_event_loop(|ui| {
+            ui.set_toolchains_available(false);
+        })
+        .unwrap();
 
     let mut rustup_command = tokio::process::Command::new("rustup");
     rustup_command.arg("toolchain").arg("list");
@@ -82,12 +85,14 @@ async fn refresh_toolchains(handle: slint::Weak<CargoUI>) -> tokio::io::Result<(
         });
     }
 
-    handle.upgrade_in_event_loop(|ui| {
-        ui.set_toolchains(ModelRc::from(
-            Rc::new(VecModel::from(toolchains)) as Rc<dyn Model<Data = Toolchain>>
-        ));
-        ui.set_toolchains_available(true);
-    });
+    handle
+        .upgrade_in_event_loop(|ui| {
+            ui.set_toolchains(ModelRc::from(
+                Rc::new(VecModel::from(toolchains)) as Rc<dyn Model<Data = Toolchain>>
+            ));
+            ui.set_toolchains_available(true);
+        })
+        .unwrap();
 
     Ok(())
 }

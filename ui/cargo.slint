@@ -261,7 +261,7 @@ export CargoView := GridBox {
     property <string> status: "Cargo UI";
     property <[string]> packages;
     property <bool> allow-package-selection: false;
-    property <string> current-package;
+    property <string> current-package:"";
     property <[string]> extra-run;
     property <[string]> extra-test;
     callback action(Action);
