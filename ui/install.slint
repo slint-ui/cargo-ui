@@ -31,17 +31,6 @@ export CargoInstallView := GridBox {
 
     property <bool> completion_shown;
 
-    // This is kind of a hack to get animated progressbar and have an animation that runs forever
-    property <float> animated : 0.;
-    animate animated {
-        duration: 2s;
-        iteration-count: -1.;
-    }
-    callback ensure-start-animation;
-    ensure-start-animation => {
-        if (animated < 0.001) { animated = 1; }
-    }
-
     Row {
         Text {
             // The animated binding there is a workaround so it fetches it
@@ -53,7 +42,6 @@ export CargoInstallView := GridBox {
             text: "🔄 Upgrade all";
             clicked => {
                 CargoInstallData.upgrade_all();
-                ensure-start-animation();
             }
         }
     }
@@ -77,7 +65,6 @@ export CargoInstallView := GridBox {
                     clicked => {
                         crate.queued = true;
                         CargoInstallData.upgrade(crate.name);
-                        ensure-start-animation();
                     }
                 }
                 if !crate.queued : Button {
@@ -85,7 +72,6 @@ export CargoInstallView := GridBox {
                     clicked => {
                         crate.queued = true;
                         CargoInstallData.uninstall(crate.name);
-                        ensure-start-animation();
                     }
                 }
                 if crate.queued: Text {
@@ -103,6 +89,8 @@ export CargoInstallView := GridBox {
                     height: parent.height - 6px;
                     property <color> col1 : #2320db;
                     property <color> col2 : #4fa4dd;
+
+                    property <float> animated : Math.mod(animation-tick()/2s, 1);
                     background: animated < 0.25 ? @linear-gradient(90deg, col1 0%, col1 animated*4, col2 100%)
                                 : animated < 0.5  ? @linear-gradient(90deg, col2 0%, col1 animated*4 - 1, col1 100%)
                                 : animated < 0.75 ? @linear-gradient(90deg, col2 0%, col2 animated*4 - 2, col1 100%)
@@ -116,7 +104,6 @@ export CargoInstallView := GridBox {
             placeholder-text: "Package to install";
             accepted(text) => {
                 CargoInstallData.install(install-le.text);
-                ensure-start-animation();
                 self.text = "";
                 completion_shown = false;
             }
@@ -175,7 +162,6 @@ export CargoInstallView := GridBox {
             text: "📀 Install";
             clicked => {
                 CargoInstallData.install(install-le.text);
-                ensure-start-animation();
                 install-le.text = "";
                 completion_shown = false;
             }
