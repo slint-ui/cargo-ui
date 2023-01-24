@@ -53,21 +53,24 @@ export BuildingPane := Pane {
                     }
                     Text {
                         horizontal_stretch: 1;
-                        color: {
-                            diagnostic.level == 1 ? #a44 :
-                            diagnostic.level == 2 ? #aa4 :
-                            diagnostic.level == 3 ? #44a :
-                            #444;
-                        };
-                        property <string> level_txt: {
-                            diagnostic.level == 1 ? "error: " :
-                            diagnostic.level == 2 ? "warning: " :
-                            diagnostic.level == 3 ? "info: " :
-                            "";
-                        }
+                        property <string> level_txt;
                         text: !expanded ? (level_txt + diagnostic.short) : diagnostic.expanded;
                         wrap: word_wrap;
 
+                        states [
+                            error when diagnostic.level == 1: {
+                                color: #a44;
+                                level_txt: "error: ";
+                            }
+                            warning when diagnostic.level == 2: {
+                                color: #aa4;
+                                level_txt: "warning: ";
+                            }
+                            info when diagnostic.level == 3: {
+                                color: #44a;
+                                level_txt: "info: ";
+                            }
+                        ]
                     }
                 }
             }
