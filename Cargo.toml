@@ -22,7 +22,7 @@ default = ["slint-backend-qt", "slint-backend-gl-all"]
 [dependencies]
 anyhow = "1.0.53"
 cargo_metadata = "0.15"
-crates-index = { version = "0.18.0" }
+crates-index = { version = "0.19.0" }
 dunce = "1.0.2"
 futures = "0.3"
 itertools = "0.10"
@@ -32,8 +32,8 @@ serde = "1.0.136"
 serde_json = "1.0.78"
 shlex = "1.1"
 slint = { version = "0.3.4", default-features = false, features = [ "compat-0-3-0" ] }
-tokio = { version = "1.16.1", features= ["full"] }
-toml_edit = "0.14.3"
+tokio = { version = "1.24.2", features= ["full"] }
+toml_edit = "0.18.0"
 git2 = "0.16.1"
 
 [build-dependencies]
