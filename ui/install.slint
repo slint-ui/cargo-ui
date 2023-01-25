@@ -9,7 +9,7 @@ import {
 
 import { CratesCompletionData } from "crates_completion.slint";
 
-export struct InstalledCrate := {
+export struct InstalledCrate  {
     name: string,
     version: string,
     // when not null, this is the version to upgrate to
@@ -19,17 +19,17 @@ export struct InstalledCrate := {
     progress: bool,
 }
 
-export global CargoInstallData := {
+export global CargoInstallData  {
     callback upgrade_all();
     callback upgrade(string);
     callback install(string);
     callback uninstall(string);
-    property<[InstalledCrate]> crates;
+    in-out property<[InstalledCrate]> crates;
 }
 
-export CargoInstallView := GridBox {
+export component CargoInstallView inherits GridBox {
 
-    property <bool> completion_shown;
+    in-out property <bool> completion_shown;
 
     Row {
         Text {
@@ -84,17 +84,18 @@ export CargoInstallView := GridBox {
             if crate.queued : Rectangle {
                 height: crate_name.preferred_height;
                 Rectangle {
+                    y:0;
                     width: parent.width / 2;
-                    x: parent.width - width - 6px;
+                    x: parent.width - self.width - 6px;
                     height: parent.height - 6px;
                     property <color> col1 : #2320db;
                     property <color> col2 : #4fa4dd;
 
                     property <float> animated : Math.mod(animation-tick()/2s, 1);
-                    background: animated < 0.25 ? @linear-gradient(90deg, col1 0%, col1 animated*4, col2 100%)
-                                : animated < 0.5  ? @linear-gradient(90deg, col2 0%, col1 animated*4 - 1, col1 100%)
-                                : animated < 0.75 ? @linear-gradient(90deg, col2 0%, col2 animated*4 - 2, col1 100%)
-                                :                   @linear-gradient(90deg, col1 0%, col2 animated*4 - 3, col2 100%);
+                    background: self.animated < 0.25 ? @linear-gradient(90deg, self.col1 0%, self.col1 self.animated*4, self.col2 100%)
+                                : self.animated < 0.5  ? @linear-gradient(90deg, self.col2 0%, self.col1 self.animated*4 - 1, self.col1 100%)
+                                : self.animated < 0.75 ? @linear-gradient(90deg, self.col2 0%, self.col2 self.animated*4 - 2, self.col1 100%)
+                                :                   @linear-gradient(90deg, self.col1 0%, self.col2 self.animated*4 - 3, self.col2 100%);
                 }
             }
         }
@@ -105,15 +106,15 @@ export CargoInstallView := GridBox {
             accepted(text) => {
                 CargoInstallData.install(install-le.text);
                 self.text = "";
-                completion_shown = false;
+                root.completion_shown = false;
             }
             edited => {
-                CratesCompletionData.update_completion(text);
-                completion_shown = text != "";
+                CratesCompletionData.update_completion(self.text);
+                root.completion_shown = self.text != "";
             }
-            if completion_shown && CratesCompletionData.completions.length > 0 : Rectangle {
+            if root.completion_shown && CratesCompletionData.completions.length > 0 : Rectangle {
                 background: white;
-                y: -height - 6px;
+                y: -self.height - 6px;
                 height: min(install-le.y - 12px, inner_layout.preferred-height);
                 drop-shadow-color: #8888;
                 drop-shadow-offset-x: 1px;
@@ -122,13 +123,14 @@ export CargoInstallView := GridBox {
                 border-radius: 5px;
                 clip: true;
                 inner_layout := VerticalBox {
-                    y: parent.height - preferred-height;
+                    y: parent.height - self.preferred-height;
                     width: 100%;
                     alignment: end;
                     for crate in CratesCompletionData.completions: Rectangle {
                         background: inner-touch.has-hover ? lightgray : transparent;
                         height: inner_text.height;
                         inner_text := Text {
+                            y:0;
                             width: 100%;
                             text: crate;
                             color: black;
@@ -137,7 +139,7 @@ export CargoInstallView := GridBox {
                         inner_touch := TouchArea {
                             clicked => {
                                 install-le.text = crate;
-                                completion_shown = false;
+                                root.completion_shown = false;
                             }
                         }
                     }
@@ -163,7 +165,7 @@ export CargoInstallView := GridBox {
             clicked => {
                 CargoInstallData.install(install-le.text);
                 install-le.text = "";
-                completion_shown = false;
+                root.completion_shown = false;
             }
         }
     }

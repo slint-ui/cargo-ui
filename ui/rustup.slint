@@ -5,27 +5,27 @@
  import { GroupBox, VerticalBox } from "std-widgets.slint";
 
 
-export struct Toolchain := {
+export struct Toolchain  {
     name: string,
     default: bool
 }
 
-export RustupView := GroupBox {
+export component RustupView inherits GroupBox {
     title: "Installed Toolchains";
 
-    property<[Toolchain]> toolchains;
-    property<bool> toolchains-available: false;
+    in-out property<[Toolchain]> toolchains;
+    in-out property<bool> toolchains-available: false;
 
     VerticalBox { 
-        if toolchains-available: VerticalLayout {
+        if root.toolchains-available: VerticalLayout {
             alignment: start;
 
-            for toolchain in toolchains: Text {
+            for toolchain in root.toolchains: Text {
                 text: toolchain.name;
                 font-weight: toolchain.default ? 800 : 400;
             }
         }
-        if !toolchains-available: Text {
+        if !root.toolchains-available: Text {
             text: "Refreshing toolchains - please wait";
             vertical-alignment: center;
         }

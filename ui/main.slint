@@ -17,46 +17,46 @@ import { CargoInstallView, InstalledCrate, CargoInstallData } from "install.slin
 import { CratesCompletionData } from "crates_completion.slint";
 export {DependencyData, DependencyNode, CargoInstallData, CratesCompletionData }
 
-CargoUI := Window {
+component CargoUI inherits Window {
     title: "Cargo UI";
     icon: @image-url("rust-logo.png");
     preferred_height: 500px;
     preferred_width: 300px;
 
-    property <string> cargo-ui-version: "x.y.z";
+    in-out property <string> cargo-ui-version: "x.y.z";
     callback open-url(string);
 
     // Cargo aliases
-    property status <=> cargo-view.status;
-    property packages <=> cargo-view.packages;
-    property allow-package_selection <=> cargo-view.allow_package-selection;
-    property current-package <=> cargo-view.current-package;
-    property extra-run <=> cargo-view.extra-run;
-    property extra-test <=> cargo-view.extra-test;
+    in-out property status <=> cargo-view.status;
+    in-out property packages <=> cargo-view.packages;
+    in-out property allow-package_selection <=> cargo-view.allow_package-selection;
+    in-out property current-package <=> cargo-view.current-package;
+    in-out property extra-run <=> cargo-view.extra-run;
+    in-out property extra-test <=> cargo-view.extra-test;
     callback action <=> cargo-view.action;
     callback cancel <=> cargo-view.cancel;
-    property is-building <=> cargo-view.is-building;
-    property diagnostics <=> cargo-view.diagnostics;
-    property workspace-valid <=> cargo-view.workspace-valid;
-    property manifest-path <=> cargo-view.manifest-path;
-    property build-results <=> cargo-view.build-results;
-    property check-results <=> cargo-view.check-results;
+    in-out property is-building <=> cargo-view.is-building;
+    in-out property diagnostics <=> cargo-view.diagnostics;
+    in-out property workspace-valid <=> cargo-view.workspace-valid;
+    in-out property manifest-path <=> cargo-view.manifest-path;
+    in-out property build-results <=> cargo-view.build-results;
+    in-out property check-results <=> cargo-view.check-results;
     callback reload-manifest <=> cargo-view.reload-manifest;
     callback show-open-dialog <=> cargo-view.show-open-dialog;
-    property build-pane-visible <=> cargo-view.build-pane-visible;
-    property has-features <=> cargo-view.has-features;
-    property package-features <=> cargo-view.package-features;
-    property enable-default-features <=> cargo-view.enable-default-features;
+    in-out property build-pane-visible <=> cargo-view.build-pane-visible;
+    in-out property has-features <=> cargo-view.has-features;
+    in-out property package-features <=> cargo-view.package-features;
+    in-out property enable-default-features <=> cargo-view.enable-default-features;
     callback package-selected <=> cargo-view.package-selected;
 
     // Rustup aliases
-    property toolchains <=> rustup-view.toolchains;
-    property toolchains-available <=> rustup-view.toolchains-available;
+    in-out property toolchains <=> rustup-view.toolchains;
+    in-out property toolchains-available <=> rustup-view.toolchains-available;
 
     VerticalBox {
         TabWidget {
             // hide the widgets from the tab focus handler when covered:
-            visible: !(is-building || build-pane-visible);
+            visible: !(root.is-building || root.build-pane-visible);
 
             Tab {
                 title: "Project / Workspace";
@@ -79,17 +79,17 @@ CargoUI := Window {
                 title: "About";
                 VerticalBox {
                     Text {
-                        text: "Cargo UI \{cargo-ui-version}";
+                        text: "Cargo UI \{root.cargo-ui-version}";
                         font-size: 40px;
                     }
                     Text {
                         text: "https://github.com/slint-ui/cargo-ui";
                         color: blue;
-                        TouchArea { clicked => { open-url(parent.text); } }
+                        TouchArea { clicked => { root.open-url(parent.text); } }
                     }
                     Text {
                         text: "License: GNU General Public License Version 3";
-                        TouchArea { clicked => { open-url("https://github.com/slint-ui/cargo-ui/blob/master/LICENSE-GPL"); } }
+                        TouchArea { clicked => { root.open-url("https://github.com/slint-ui/cargo-ui/blob/master/LICENSE-GPL"); } }
                     }
 
                     Rectangle {}
@@ -97,7 +97,7 @@ CargoUI := Window {
                     HorizontalBox {
                         alignment: end;
                         vertical-stretch: 0;
-                        AboutSlint { TouchArea { clicked => { open-url("https://slint-ui.com"); } } }
+                        AboutSlint { TouchArea { clicked => { root.open-url("https://slint-ui.com"); } } }
                     }
                 }
             }
@@ -108,24 +108,23 @@ CargoUI := Window {
         width: 100%; height: 100%;
         y: parent.height;
         states [
-            visible when (is_building || build_pane_visible) : {
+            visible when (root.is_building || root.build_pane_visible) : {
                 y: 0;
-            }
-        ]
-        transitions [
-            in visible : {
+            in  {
                 animate y { duration: 200ms; easing: ease; }
             }
-            out visible : {
+            out  {
                 animate y { duration: 200ms; easing: ease; }
             }
+            }
         ]
+
         if (animated.y < root.height): BuildingPane {
             background: root.background;
             status: root.status;
             diagnostics: root.diagnostics;
             cancel => { root.cancel() }
-            back => { build_pane_visible = false; }
+            back => { root.build_pane_visible = false; }
             is_building: root.is_building;
         }
     }
