@@ -101,21 +101,25 @@ export component CargoInstallView inherits GridBox {
         }
     }
     Row {
-        install-le := LineEdit {
-            placeholder-text: "Package to install";
-            accepted(text) => {
-                CargoInstallData.install(install-le.text);
-                self.text = "";
-                root.completion_shown = false;
-            }
-            edited => {
-                CratesCompletionData.update_completion(self.text);
-                root.completion_shown = self.text != "";
+        install-re := Rectangle {
+            horizontal-stretch: 1;
+            install-le := LineEdit {
+                width: 100%;
+                placeholder-text: "Package to install";
+                accepted(text) => {
+                    CargoInstallData.install(install-le.text);
+                    self.text = "";
+                    root.completion_shown = false;
+                }
+                edited => {
+                    CratesCompletionData.update_completion(self.text);
+                    root.completion_shown = self.text != "";
+                }
             }
             if root.completion_shown && CratesCompletionData.completions.length > 0 : Rectangle {
                 background: white;
                 y: -self.height - 6px;
-                height: min(install-le.y - 12px, inner_layout.preferred-height);
+                height: min(install-re.y - 12px, inner_layout.preferred-height);
                 drop-shadow-color: #8888;
                 drop-shadow-offset-x: 1px;
                 drop-shadow-offset-y: 1px;

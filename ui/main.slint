@@ -97,7 +97,10 @@ component CargoUI inherits Window {
                     HorizontalBox {
                         alignment: end;
                         vertical-stretch: 0;
-                        AboutSlint { TouchArea { clicked => { root.open-url("https://slint-ui.com"); } } }
+                        TouchArea {
+                            clicked => { root.open-url("https://slint-ui.com"); }
+                            AboutSlint {  }
+                        }
                     }
                 }
             }

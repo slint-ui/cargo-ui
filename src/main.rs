@@ -22,7 +22,7 @@ use slint::Model;
 use crate::cargo::{CargoMessage, FeatureSettings};
 
 fn main() {
-    let cargo_ui = CargoUI::new();
+    let cargo_ui = CargoUI::new().unwrap();
 
     let cargo_worker = cargo::CargoWorker::new(&cargo_ui);
     let rustup_worker = rustup::RustupWorker::new(&cargo_ui);
@@ -171,7 +171,7 @@ fn main() {
             }
         });
 
-    cargo_ui.run();
+    cargo_ui.run().unwrap();
 
     cargo_worker.join().unwrap();
     rustup_worker.join().unwrap();

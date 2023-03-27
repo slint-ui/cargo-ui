@@ -124,21 +124,24 @@ component DepTreePane inherits Pane {
 
     GridBox {
         Row {
-            install-le := LineEdit {
+            Rectangle {
                 z: 1; // put on top because of the completion
-                enabled: DependencyData.package-selected;
-                placeholder-text: DependencyData.package-selected ? "Dependency to add" : "Select a package to add a dependency";
-                accepted(text) => {
-                    DependencyData.add-dependency(install-le.text, "");
-                    self.text = "";
-                    root.completion_shown = false;
+                horizontal-stretch: 1;
+                install-le := LineEdit {
+                    width: 100%;
+                    enabled: DependencyData.package-selected;
+                    placeholder-text: DependencyData.package-selected ? "Dependency to add" : "Select a package to add a dependency";
+                    accepted(text) => {
+                        DependencyData.add-dependency(install-le.text, "");
+                        self.text = "";
+                        root.completion_shown = false;
+                    }
+                    edited => {
+                        CratesCompletionData.update_completion(self.text);
+                        root.completion_shown = self.text != "";
+                    }
                 }
-                edited => {
-                    CratesCompletionData.update_completion(self.text);
-                    root.completion_shown = self.text != "";
-                }
-                if root.completion_shown && CratesCompletionData.completions.length > 0 :
-                Rectangle {
+                if root.completion_shown && CratesCompletionData.completions.length > 0 : Rectangle {
                     background: white;
                     y: parent.height + 6px;
                     height: min(root.height - install-le.y - install-le.height - 12px, inner_layout.preferred-height);
@@ -182,6 +185,7 @@ component DepTreePane inherits Pane {
         }
         ListView {
             colspan: 2;
+            horizontal-stretch: 1;
             for dep in root.model : HorizontalLayout {
                 width: self.preferred-width;
                 spacing: 5px;
