@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.3.3] - 2022-05-10
+## [0.3.3] - 2023-05-04
 
  * Update dependencies
  * Run the index update in a thread
