@@ -72,7 +72,10 @@ component CargoUI inherits Window {
 
             Tab {
                 title: "Toolchains";
-                rustup-view := RustupView { }
+                rustup-view := RustupView {
+                    width: 100%;
+                    height: 100%;
+                }
             }
 
             Tab {
@@ -99,7 +102,9 @@ component CargoUI inherits Window {
                         vertical-stretch: 0;
                         TouchArea {
                             clicked => { root.open-url("https://slint-ui.com"); }
-                            AboutSlint {  }
+                            VerticalLayout {
+                                AboutSlint {  }
+                            }
                         }
                     }
                 }
