@@ -16,11 +16,11 @@ jobs:
         with:
           toolchain: stable
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v3
         with:
           version: 6.5.0
 #      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/install@v0.1
+      - uses: baptiste0928/cargo-install@v2
         with:
           crate: cargo-about
       - name: Build
@@ -48,8 +48,8 @@ jobs:
             mkdir 3rdparty-licenses
             cd ..
             cd ..
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/LICENSE.QT pkg/cargo-ui/3rdparty-licenses/
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/i-slint-backend-qt-1.*/LICENSE.QT pkg/cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/i-slint-backend-qt-1.*/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
             cp ../LICENSE-* pkg/cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o pkg/cargo-ui/3rdparty-licenses/index.html
       - name: Upload artifact
@@ -74,12 +74,12 @@ jobs:
           path: ~/work/cargo-ui/Qt
           key: ${{ runner.os }}-${{ github.job }}-Qt
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v3
         with:
           version: 5.15.2
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
 #      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/install@v0.1
+      - uses: baptiste0928/cargo-install@v2
         with:
           crate: cargo-about
       - name: Build
@@ -91,7 +91,7 @@ jobs:
         run: |
             mkdir -p cargo-ui/3rdparty-licenses
             cp ./target/release/cargo-ui ./cargo-ui/
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/i-slint-backend-qt-1.*/LICENSE.QT ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/i-slint-backend-qt-1.*/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
             cp ./LICENSE-* cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
       - name: Tar artifacts to preserve permissions
@@ -123,12 +123,12 @@ jobs:
           path: ~/work/cargo-ui/Qt
           key: ${{ runner.os }}-${{ github.job }}-Qt
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v3
         with:
           version: 6.5.0
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
 #      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/install@v0.1
+      - uses: baptiste0928/cargo-install@v2
         with:
           crate: cargo-about
       - name: Build x86_64
@@ -156,7 +156,7 @@ jobs:
             mkdir -p ./plugins/platforms
             cp -a ~/work/cargo-ui/Qt/6.5.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
             cd ..
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/i-slint-backend-qt-1.*/LICENSE.QT ~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/i-slint-backend-qt-1.*/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
             cp ./LICENSE-* cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
       - name: Tar artifacts to preserve permissions

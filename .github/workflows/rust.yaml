@@ -21,17 +21,17 @@ jobs:
     - name: Install Linux Dependencies
       run: sudo apt-get install libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev
 
-    - name: Cache Qt
-      id: cache-qt
-      uses: actions/cache@v3
-      with:
-        path: ~/work/cargo-ui/Qt
-        key: ${{ runner.os }}-${{ github.job }}-Qt
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v2
-      with:
-        version: '5.15.2'
-        cached: ${{ steps.cache-qt.outputs.cache-hit }}
+#    - name: Cache Qt
+#      id: cache-qt
+#      uses: actions/cache@v3
+#      with:
+#        path: ~/work/cargo-ui/Qt
+#        key: ${{ runner.os }}-${{ github.job }}-Qt
+#    - name: Install Qt
+#      uses: jurplel/install-qt-action@v3
+#      with:
+#        version: '5.15.2'
+#        cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
     - uses: dtolnay/rust-toolchain@stable
       with:
