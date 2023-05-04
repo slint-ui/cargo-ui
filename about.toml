@@ -9,6 +9,8 @@ accepted = [
     "CC0-1.0",
     "BSL-1.0",
     "ISC",
+    "Unicode-DFS-2016",
+    "OpenSSL",
     "GPL-3.0", # That's only for Slint
 ]
 targets = [
@@ -18,3 +20,4 @@ targets = [
 ]
 ignore-build-dependencies = true
 ignore-dev-dependencies = true
+filter-noassertion = true
