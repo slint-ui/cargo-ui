@@ -10,16 +10,15 @@ jobs:
   build_windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install latest stable Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          target: x86_64-pc-windows-msvc
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
-          version: 6.2.4
+          version: 6.5.0
 #      - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/install@v0.1
         with:
@@ -36,21 +35,21 @@ jobs:
             mkdir cargo-ui
             cd cargo-ui
             cp ..\..\target/release/cargo-ui.exe ./
-            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt6Core.dll ./
-            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt6Gui.dll ./
-            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt6Widgets.dll ./
-            cp ..\..\..\Qt\6.2.4\msvc2019_64\bin/Qt6Svg.dll ./
+            cp ..\..\..\Qt\6.5.0\msvc2019_64\bin/Qt6Core.dll ./
+            cp ..\..\..\Qt\6.5.0\msvc2019_64\bin/Qt6Gui.dll ./
+            cp ..\..\..\Qt\6.5.0\msvc2019_64\bin/Qt6Widgets.dll ./
+            cp ..\..\..\Qt\6.5.0\msvc2019_64\bin/Qt6Svg.dll ./
             mkdir .\plugins\platforms
-            cp ..\..\..\Qt\6.2.4\msvc2019_64\plugins\platforms\qwindows.dll ./plugins/platforms
+            cp ..\..\..\Qt\6.5.0\msvc2019_64\plugins\platforms\qwindows.dll ./plugins/platforms
             mkdir .\plugins\styles
-            cp ..\..\..\Qt\6.2.4\msvc2019_64\plugins\styles\qwindowsvistastyle.dll ./plugins/styles
+            cp ..\..\..\Qt\6.5.0\msvc2019_64\plugins\styles\qwindowsvistastyle.dll ./plugins/styles
             mkdir .\plugins\imageformats
-            cp ..\..\..\Qt\6.2.4\msvc2019_64\plugins\imageformats\qsvg.dll ./plugins/imageformats
+            cp ..\..\..\Qt\6.5.0\msvc2019_64\plugins\imageformats\qsvg.dll ./plugins/imageformats
             mkdir 3rdparty-licenses
             cd ..
             cd ..
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.4/LICENSE.QT pkg/cargo-ui/3rdparty-licenses/
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.4/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/LICENSE.QT pkg/cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/QtThirdPartySoftware_Listing.txt pkg/cargo-ui/3rdparty-licenses/
             cp ../LICENSE-* pkg/cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o pkg/cargo-ui/3rdparty-licenses/index.html
       - name: Upload artifact
@@ -61,14 +60,13 @@ jobs:
                 pkg
 
   build_linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install latest stable Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          target: x86_64-unknown-linux-gnu
       - name: Cache Qt
         id: cache-qt
         uses: actions/cache@v2
@@ -93,7 +91,7 @@ jobs:
         run: |
             mkdir -p cargo-ui/3rdparty-licenses
             cp ./target/release/cargo-ui ./cargo-ui/
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.4/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.4/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
             cp ./LICENSE-* cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
       - name: Tar artifacts to preserve permissions
@@ -107,9 +105,9 @@ jobs:
   build_macos:
     runs-on: macOS-11
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install latest stable Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           target: x86_64-apple-darwin
@@ -127,7 +125,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
         with:
-          version: 6.2.0 # for Apple Silicon support
+          version: 6.5.0
           cached: ${{ steps.cache-qt.outputs.cache-hit }}
 #      - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/install@v0.1
@@ -151,20 +149,20 @@ jobs:
             cd cargo-ui
             cp ../target/x86_64-apple-darwin/release/cargo-ui .
             install_name_tool -add_rpath @executable_path/. ./cargo-ui
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtCore.framework ./
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtGui.framework ./
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtWidgets.framework ./
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/lib/QtDBus.framework ./
+            cp -a ~/work/cargo-ui/Qt/6.5.0/macos/lib/QtCore.framework ./
+            cp -a ~/work/cargo-ui/Qt/6.5.0/macos/lib/QtGui.framework ./
+            cp -a ~/work/cargo-ui/Qt/6.5.0/macos/lib/QtWidgets.framework ./
+            cp -a ~/work/cargo-ui/Qt/6.5.0/macos/lib/QtDBus.framework ./
             mkdir -p ./plugins/platforms
-            cp -a ~/work/cargo-ui/Qt/6.2.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
+            cp -a ~/work/cargo-ui/Qt/6.5.0/macos/plugins/platforms/libqcocoa.dylib ./plugins/platforms
             cd ..
-            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.4/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-0.2.4/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
+            cp ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/LICENSE.QT ~/.cargo/registry/src/github.com-1ecc6299db9ec823/i-slint-backend-qt-1.*/QtThirdPartySoftware_Listing.txt cargo-ui/3rdparty-licenses/
             cp ./LICENSE-* cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o cargo-ui/3rdparty-licenses/index.html
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-macos.tar.gz cargo-ui
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
             name: cargo-ui-macos
             path: cargo-ui-macos.tar.gz
