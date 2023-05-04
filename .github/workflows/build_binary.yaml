@@ -53,7 +53,7 @@ jobs:
             cp ../LICENSE-* pkg/cargo-ui/3rdparty-licenses/
             cargo about generate about.hbs -o pkg/cargo-ui/3rdparty-licenses/index.html
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
             name: cargo-ui-windows
             path: |
@@ -97,7 +97,7 @@ jobs:
       - name: Tar artifacts to preserve permissions
         run: tar czvf cargo-ui-linux.tar.gz cargo-ui
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
             name: cargo-ui-linux
             path: cargo-ui-linux.tar.gz
@@ -111,11 +111,6 @@ jobs:
         with:
           toolchain: stable
           target: x86_64-apple-darwin
-      - name: Install latest stable Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: aarch64-apple-darwin
       - name: Cache Qt
         id: cache-qt
         uses: actions/cache@v3
