@@ -9,6 +9,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  SLINT_NO_QT: 1
+  CARGO_INCREMENTAL: false
 
 jobs:
   build:
