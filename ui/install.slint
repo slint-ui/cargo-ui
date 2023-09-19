@@ -4,7 +4,7 @@
 
 import {
     ComboBox, VerticalBox, HorizontalBox, GridBox, Button,
-    LineEdit, ListView, GroupBox, CheckBox
+    LineEdit, ListView, GroupBox, CheckBox, ProgressIndicator
 } from "std-widgets.slint";
 
 import { CratesCompletionData } from "crates_completion.slint";
@@ -81,21 +81,9 @@ export component CargoInstallView inherits GridBox {
                     horizontal-alignment: right;
                 }
             }
-            if crate.queued : Rectangle {
-                height: crate_name.preferred_height;
-                Rectangle {
-                    y:0;
-                    width: parent.width / 2;
-                    x: parent.width - self.width - 6px;
-                    height: parent.height - 6px;
-                    property <color> col1 : #2320db;
-                    property <color> col2 : #4fa4dd;
-
-                    property <float> animated : Math.mod(animation-tick()/2s, 1);
-                    background: self.animated < 0.25 ? @linear-gradient(90deg, self.col1 0%, self.col1 self.animated*4, self.col2 100%)
-                                : self.animated < 0.5  ? @linear-gradient(90deg, self.col2 0%, self.col1 self.animated*4 - 1, self.col1 100%)
-                                : self.animated < 0.75 ? @linear-gradient(90deg, self.col2 0%, self.col2 self.animated*4 - 2, self.col1 100%)
-                                :                   @linear-gradient(90deg, self.col1 0%, self.col2 self.animated*4 - 3, self.col2 100%);
+            if crate.queued : HorizontalBox {
+                ProgressIndicator {
+                    indeterminate: true;
                 }
             }
         }
