@@ -141,7 +141,7 @@ pub async fn process_install(job: InstallJob, handle: slint::Weak<CargoUI>) -> s
 
 pub fn apply_install_list(
     mut list: Vec<InstalledCrate>,
-    crates_index: Option<&crates_index::Index>,
+    crates_index: Option<&crates_index::GitIndex>,
     install_queue: &VecDeque<InstallJob>,
     currently_installing: &SharedString,
     handle: slint::Weak<CargoUI>,
