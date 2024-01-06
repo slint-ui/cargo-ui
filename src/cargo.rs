@@ -320,7 +320,7 @@ async fn cargo_worker_loop(
 
 async fn load_crate_index() -> Result<crates_index::GitIndex, String> {
     tokio::task::spawn_blocking(|| {
-    let mut index = crates_index::GitIndex::new_cargo_default().map_err(|x| x.to_string())?;
+        let mut index = crates_index::GitIndex::new_cargo_default().map_err(|x| x.to_string())?;
         index.update().map_err(|x| x.to_string())?;
         Ok(index)
     })
