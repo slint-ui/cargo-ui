@@ -91,7 +91,7 @@ async fn cargo_worker_loop(
 ) -> tokio::io::Result<()> {
     let mut manifest: Manifest = default_manifest().into();
     let mut metadata: Option<Metadata> = None;
-    let mut crates_index: Option<crates_index::Index> = None;
+    let mut crates_index: Option<crates_index::GitIndex> = None;
     let mut package = SharedString::default();
     let mut update_features = true;
     let mut install_queue = VecDeque::new();
@@ -318,9 +318,9 @@ async fn cargo_worker_loop(
     }
 }
 
-async fn load_crate_index() -> Result<crates_index::Index, String> {
+async fn load_crate_index() -> Result<crates_index::GitIndex, String> {
     tokio::task::spawn_blocking(|| {
-        let mut index = crates_index::Index::new_cargo_default().map_err(|x| x.to_string())?;
+        let mut index = crates_index::GitIndex::new_cargo_default().map_err(|x| x.to_string())?;
         index.update().map_err(|x| x.to_string())?;
         Ok(index)
     })
@@ -555,7 +555,7 @@ async fn read_metadata(manifest: Manifest, handle: slint::Weak<CargoUI>) -> Opti
 
 fn apply_metadata(
     metadata: &Metadata,
-    crates_index: Option<&crates_index::Index>,
+    crates_index: Option<&crates_index::GitIndex>,
     mut update_features: bool,
     package: &mut SharedString,
     handle: slint::Weak<CargoUI>,
@@ -712,7 +712,7 @@ fn build_dep_tree(
     depgraph_tree: &mut Vec<TreeNode>,
     duplicates: &mut HashSet<PackageId>,
     metadata: &Metadata,
-    crates_index: Option<&crates_index::Index>,
+    crates_index: Option<&crates_index::GitIndex>,
     map: &HashMap<PackageId, &Node>,
     indentation: i32,
 ) {
