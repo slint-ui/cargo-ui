@@ -37,5 +37,5 @@ toml_edit = "0.21"
 git2 = "0.18"
 
 [build-dependencies]
-slint-build = { version = "1.1" }
+slint-build = { version = "1.3" }
 
