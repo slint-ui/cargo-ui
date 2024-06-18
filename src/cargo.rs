@@ -923,7 +923,7 @@ fn to_table_name(dep_kind: DependencyKind) -> &'static str {
 fn dependency_remove(pkg: &Path, dependency: &str, dep_kind: DependencyKind) -> anyhow::Result<()> {
     let manifest_contents = std::fs::read_to_string(pkg)
         .with_context(|| format!("Failed to load '{}'", pkg.display()))?;
-    let mut document: toml_edit::Document = manifest_contents.parse()?;
+    let mut document: toml_edit::DocumentMut = manifest_contents.parse()?;
     let table_name = to_table_name(dep_kind);
     let dependencies = &mut document[table_name];
     let removed = !std::mem::take(&mut dependencies[dependency]).is_none();
@@ -942,7 +942,7 @@ fn dependency_upgrade_to_version(
 ) -> anyhow::Result<()> {
     let manifest_contents = std::fs::read_to_string(pkg)
         .with_context(|| format!("Failed to load '{}'", pkg.display()))?;
-    let mut document: toml_edit::Document = manifest_contents.parse()?;
+    let mut document: toml_edit::DocumentMut = manifest_contents.parse()?;
     let table_name = to_table_name(dep_kind);
     let dep = &mut document[table_name][dependency];
     if dep.is_none() {
@@ -967,7 +967,7 @@ fn dependency_add(
 ) -> anyhow::Result<()> {
     let manifest_contents = std::fs::read_to_string(pkg)
         .with_context(|| format!("Failed to load '{}'", pkg.display()))?;
-    let mut document: toml_edit::Document = manifest_contents.parse()?;
+    let mut document: toml_edit::DocumentMut = manifest_contents.parse()?;
     let table_name = to_table_name(dep_kind);
     let tbl = &mut document[table_name].or_insert(toml_edit::table());
     if !tbl.is_table_like() {
