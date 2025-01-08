@@ -44,17 +44,8 @@ impl RustupWorker {
 
 async fn rustup_worker_loop(mut r: UnboundedReceiver<RustupMessage>, handle: slint::Weak<CargoUI>) {
     let refresh_handle = tokio::task::spawn(refresh_toolchains(handle.clone()));
-
-    loop {
-        let m = r.recv().await;
-
-        match m {
-            None => return,
-            Some(RustupMessage::Quit) => {
-                refresh_handle.abort();
-                return;
-            }
-        }
+    if let Some(RustupMessage::Quit) = r.recv().await {
+        refresh_handle.abort();
     }
 }
 

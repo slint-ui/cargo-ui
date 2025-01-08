@@ -17,11 +17,11 @@ import { CargoInstallView, InstalledCrate, CargoInstallData } from "install.slin
 import { CratesCompletionData } from "crates_completion.slint";
 export {DependencyData, DependencyNode, CargoInstallData, CratesCompletionData }
 
-component CargoUI inherits Window {
+export component CargoUI inherits Window {
     title: "Cargo UI";
     icon: @image-url("rust-logo.png");
-    preferred_height: 500px;
-    preferred_width: 300px;
+    preferred_height: 550px;
+    preferred_width: 500px;
 
     in-out property <string> cargo-ui-version: "x.y.z";
     callback open-url(string);

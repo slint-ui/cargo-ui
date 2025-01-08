@@ -5,7 +5,7 @@
 use super::{Action, CargoUI, CratesCompletionData, DependencyData, DependencyNode, Diag, Feature};
 use anyhow::Context;
 use cargo_metadata::{
-    diagnostic::DiagnosticLevel, semver::Version, DependencyKind, Metadata, Node, PackageId,
+    TargetKind, diagnostic::DiagnosticLevel, semver::Version, DependencyKind, Metadata, Node, PackageId,
 };
 use futures::future::{Fuse, FusedFuture, FutureExt};
 use itertools::Itertools;
@@ -378,7 +378,7 @@ async fn run_cargo(
         cargo_command.arg("-p").arg(action.package.as_str());
     }
     features.to_args(&mut cargo_command);
-    cargo_command.args(&["--message-format", "json"]);
+    cargo_command.args(["--message-format", "json"]);
 
     if !action.arguments.is_empty() {
         cargo_command.arg("--");
@@ -595,8 +595,7 @@ fn apply_metadata(
                 .unwrap_or_default();
 
             if is_selected {
-                // Use get_or_insert_with_default() when https://github.com/rust-lang/rust/issues/82901 is stable
-                features.get_or_insert_with(|| Default::default()).extend(
+                features.get_or_insert_default().extend(
                     p.features
                         .keys()
                         .filter(|name| *name != "default")
@@ -617,11 +616,11 @@ fn apply_metadata(
             continue;
         }
         for t in &p.targets {
-            if t.kind.iter().any(|x| x == "bin") {
+            if t.kind.iter().any(|x| *x == TargetKind::Bin) {
                 run_target.push(SharedString::from(t.name.as_str()));
-            } else if t.kind.iter().any(|x| x == "example") {
+            } else if t.kind.iter().any(|x| *x == TargetKind::Example) {
                 run_target.push(SharedString::from(format!("{} (example)", t.name).as_str()));
-            } else if t.kind.iter().any(|x| x == "test") {
+            } else if t.kind.iter().any(|x| *x == TargetKind::Test) {
                 test_target.push(SharedString::from(t.name.as_str()));
             }
         }
@@ -670,7 +669,7 @@ fn apply_metadata(
                 &SharedString::default(),
                 &mut depgraph_tree,
                 &mut duplicates,
-                &metadata,
+                metadata,
                 crates_index,
                 &map,
                 0,
@@ -761,7 +760,7 @@ fn build_dep_tree(
         for d in &map[package_id].deps {
             build_dep_tree(
                 &d.pkg,
-                Some(&d),
+                Some(d),
                 &package_id.repr.as_str().into(),
                 &mut node.children,
                 duplicates,
