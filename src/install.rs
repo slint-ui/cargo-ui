@@ -158,7 +158,7 @@ pub fn apply_install_list(
                 let new_version = from_idx.highest_normal_version()?.version();
                 (Version::from_str(new_version).ok()?
                     > Version::from_str(cr.version.strip_prefix("v")?).ok()?)
-                .then(|| new_version)
+                .then_some(new_version)
                 .map(|x| x.into())
             })
             .unwrap_or_default();
