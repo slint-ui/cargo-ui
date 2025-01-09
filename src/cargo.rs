@@ -5,7 +5,8 @@
 use super::{Action, CargoUI, CratesCompletionData, DependencyData, DependencyNode, Diag, Feature};
 use anyhow::Context;
 use cargo_metadata::{
-    TargetKind, diagnostic::DiagnosticLevel, semver::Version, DependencyKind, Metadata, Node, PackageId,
+    diagnostic::DiagnosticLevel, semver::Version, DependencyKind, Metadata, Node, PackageId,
+    TargetKind,
 };
 use futures::future::{Fuse, FusedFuture, FutureExt};
 use itertools::Itertools;
