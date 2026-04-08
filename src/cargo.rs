@@ -634,11 +634,11 @@ fn apply_metadata(
             continue;
         }
         for t in &p.targets {
-            if t.kind.iter().any(|x| *x == TargetKind::Bin) {
+            if t.kind.contains(&TargetKind::Bin) {
                 run_target.push(SharedString::from(t.name.as_str()));
-            } else if t.kind.iter().any(|x| *x == TargetKind::Example) {
+            } else if t.kind.contains(&TargetKind::Example) {
                 run_target.push(SharedString::from(format!("{} (example)", t.name).as_str()));
-            } else if t.kind.iter().any(|x| *x == TargetKind::Test) {
+            } else if t.kind.contains(&TargetKind::Test) {
                 test_target.push(SharedString::from(t.name.as_str()));
             }
         }
@@ -722,6 +722,7 @@ struct TreeNode {
     children: Vec<TreeNode>,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_dep_tree(
     package_id: &PackageId,
     node_dep: Option<&cargo_metadata::NodeDep>,
@@ -741,7 +742,7 @@ fn build_dep_tree(
             .and_then(|idx| idx.crate_from_cache(&package.name).ok())
             .and_then(|c| c.highest_normal_version().cloned())
             .and_then(|v| Version::from_str(v.version()).ok())
-            .map_or(false, |latest| latest > package.version);
+            .is_some_and(|latest| latest > package.version);
     let dep_kind = node_dep
         .filter(|n| {
             !n.dep_kinds
@@ -902,9 +903,7 @@ impl FeatureSettings {
             .get_package_features()
             .iter()
             .filter_map(|feature| {
-                if (feature.enabled && !feature.enabled_by_default && enable_default_features)
-                    || (feature.enabled && !enable_default_features)
-                {
+                if feature.enabled && !(feature.enabled_by_default && enable_default_features) {
                     Some(feature.name.clone())
                 } else {
                     None
