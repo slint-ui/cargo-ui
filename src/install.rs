@@ -5,11 +5,9 @@
 use std::{
     collections::{HashSet, VecDeque},
     rc::Rc,
-    str::FromStr,
 };
 
 use super::*;
-use cargo_metadata::semver::Version;
 use slint::{ModelRc, SharedString, VecModel};
 use tokio::io::{AsyncBufReadExt, BufReader};
 
@@ -141,7 +139,6 @@ pub async fn process_install(job: InstallJob, handle: slint::Weak<CargoUI>) -> s
 
 pub fn apply_install_list(
     mut list: Vec<InstalledCrate>,
-    crates_index: Option<&crates_index::GitIndex>,
     install_queue: &VecDeque<InstallJob>,
     currently_installing: &SharedString,
     handle: slint::Weak<CargoUI>,
@@ -152,16 +149,6 @@ pub fn apply_install_list(
     }
     for cr in list.iter_mut() {
         cr.queued = set.remove(&cr.name);
-        cr.new_version = crates_index
-            .and_then(|idx| idx.crate_(&cr.name))
-            .and_then(|from_idx| {
-                let new_version = from_idx.highest_normal_version()?.version();
-                (Version::from_str(new_version).ok()?
-                    > Version::from_str(cr.version.strip_prefix("v")?).ok()?)
-                .then_some(new_version)
-                .map(|x| x.into())
-            })
-            .unwrap_or_default();
     }
     for cr in set {
         list.push(InstalledCrate {
