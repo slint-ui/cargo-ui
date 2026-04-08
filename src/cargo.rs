@@ -2,7 +2,10 @@
  * SPDX-License-Identifier: MIT OR Apache-2.0
  */
 
-use super::{Action, CargoUI, CratesCompletionData, DependencyData, DependencyNode, Diag, Feature};
+use super::{
+    Action, CargoUI, CratesCompletionData, DependencyData, DependencyNode, Diag, Feature,
+    InstalledCrate,
+};
 use anyhow::Context;
 use cargo_metadata::{
     diagnostic::DiagnosticLevel, semver::Version, DependencyKind, Metadata, Node, PackageId,
@@ -92,25 +95,38 @@ async fn cargo_worker_loop(
 ) -> tokio::io::Result<()> {
     let mut manifest: Manifest = default_manifest().into();
     let mut metadata: Option<Metadata> = None;
-    let mut crates_index: Option<crates_index::GitIndex> = None;
+    let mut crates_index: Option<crates_index::SparseIndex> = None;
     let mut package = SharedString::default();
     let mut update_features = true;
     let mut install_queue = VecDeque::new();
     let mut currently_installing = SharedString::default();
+
+    let http_client = reqwest::Client::builder()
+        .user_agent(concat!(
+            "cargo-ui/",
+            env!("CARGO_PKG_VERSION"),
+            " (https://github.com/slint-ui/cargo-ui)"
+        ))
+        .build()
+        .expect("failed to build HTTP client");
 
     let run_cargo_future = Fuse::terminated();
     let read_metadata_future = read_metadata(manifest.clone(), handle.clone()).fuse();
     let load_crate_index_future = load_crate_index().fuse();
     let install_completion_future = Fuse::terminated();
     let refresh_install_list_future = refresh_install_list(handle.clone()).fuse();
+    let enrich_install_list_future = Fuse::terminated();
     let process_install_future = Fuse::terminated();
+    let dep_modify_future = Fuse::terminated();
     futures::pin_mut!(
         run_cargo_future,
         read_metadata_future,
         load_crate_index_future,
         refresh_install_list_future,
+        enrich_install_list_future,
         process_install_future,
         install_completion_future,
+        dep_modify_future,
     );
     loop {
         let m = futures::select! {
@@ -136,13 +152,25 @@ async fn cargo_worker_loop(
                     apply_metadata(metadata, crates_index.as_ref(), update_features, &mut package, handle.clone());
                     update_features = false;
                 }
-                if refresh_install_list_future.is_terminated() {
-                    refresh_install_list_future.set(refresh_install_list(handle.clone()).fuse());
-                }
                 continue;
             }
             res = refresh_install_list_future =>  {
-                apply_install_list(res?, crates_index.as_ref(), &install_queue, &currently_installing, handle.clone());
+                let list = res?;
+                apply_install_list(list.clone(), &install_queue, &currently_installing, handle.clone());
+                enrich_install_list_future.set(
+                    enrich_install_list_versions(list, http_client.clone()).fuse(),
+                );
+                continue;
+            }
+            list = enrich_install_list_future => {
+                apply_install_list(list, &install_queue, &currently_installing, handle.clone());
+                continue;
+            }
+            res = dep_modify_future => {
+                if let Some(new_manifest) = res {
+                    read_metadata_future
+                        .set(read_metadata(new_manifest, handle.clone()).fuse());
+                }
                 continue;
             }
             res = process_install_future => {
@@ -232,7 +260,7 @@ async fn cargo_worker_loop(
                 crate_name,
                 dep_kind,
             } => {
-                if let Some((pkg, cr)) = metadata
+                let pkg_manifest_path = metadata
                     .as_ref()
                     .and_then(|metadata| {
                         let pkg = package.as_str();
@@ -242,27 +270,24 @@ async fn cargo_worker_loop(
                             metadata.packages.iter().find(|p| p.name == pkg)
                         }
                     })
-                    .and_then(|p| Some((p, crates_index.as_ref()?.crate_(&crate_name)?)))
-                {
-                    match dependency_add(
-                        pkg.manifest_path.as_ref(),
-                        crate_name.as_str(),
-                        cr.highest_normal_version()
-                            .unwrap_or(cr.highest_version())
-                            .version(),
-                        dep_kind,
-                    ) {
-                        Ok(()) => read_metadata_future
-                            .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
-                        Err(e) => {
-                            handle
-                                .clone()
-                                .upgrade_in_event_loop(move |h| {
-                                    h.set_status(format!("{}", e).into());
-                                })
-                                .unwrap();
-                        }
+                    .map(|p| p.manifest_path.as_std_path().to_path_buf());
+                if let Some(pkg_manifest_path) = pkg_manifest_path {
+                    if !dep_modify_future.is_terminated() {
+                        // Avoid racing two concurrent writes to Cargo.toml.
+                        continue;
                     }
+                    dep_modify_future.set(
+                        dependency_modify(
+                            DepModifyOp::Add,
+                            crate_name,
+                            dep_kind,
+                            pkg_manifest_path,
+                            manifest.clone(),
+                            http_client.clone(),
+                            handle.clone(),
+                        )
+                        .fuse(),
+                    );
                 }
             }
             CargoMessage::DependencyUpgrade {
@@ -273,31 +298,27 @@ async fn cargo_worker_loop(
                 let pkg = PackageId {
                     repr: parent_package.into(),
                 };
-                if let Some((pkg, cr)) = metadata
+                let pkg_manifest_path = metadata
                     .as_ref()
                     .and_then(|metadata| metadata.packages.iter().find(|p| p.id == pkg))
-                    .and_then(|p| Some((p, crates_index.as_ref()?.crate_(&crate_name)?)))
-                {
-                    match dependency_upgrade_to_version(
-                        pkg.manifest_path.as_ref(),
-                        crate_name.as_str(),
-                        cr.highest_normal_version()
-                            .unwrap_or(cr.highest_version())
-                            .version(),
-                        dep_kind,
-                    ) {
-                        Ok(()) => read_metadata_future
-                            .set(read_metadata(manifest.clone(), handle.clone()).fuse()),
-                        Err(e) => {
-                            dbg!(e);
-                            handle
-                                .clone()
-                                .upgrade_in_event_loop(|h| {
-                                    h.set_status("Not yet supported".into());
-                                })
-                                .unwrap();
-                        }
+                    .map(|p| p.manifest_path.as_std_path().to_path_buf());
+                if let Some(pkg_manifest_path) = pkg_manifest_path {
+                    if !dep_modify_future.is_terminated() {
+                        // Avoid racing two concurrent writes to Cargo.toml.
+                        continue;
                     }
+                    dep_modify_future.set(
+                        dependency_modify(
+                            DepModifyOp::Upgrade,
+                            crate_name,
+                            dep_kind,
+                            pkg_manifest_path,
+                            manifest.clone(),
+                            http_client.clone(),
+                            handle.clone(),
+                        )
+                        .fuse(),
+                    );
                 }
             }
             CargoMessage::Install(job) => {
@@ -309,21 +330,17 @@ async fn cargo_worker_loop(
                 }
             }
             CargoMessage::UpdateCompletion(query) => {
-                if let Some(idx) = crates_index.as_ref() {
-                    install_completion_future.set(
-                        install_completion(idx.path().to_owned(), query, handle.clone()).fuse(),
-                    );
-                }
+                install_completion_future.set(
+                    install_completion(query, http_client.clone(), handle.clone()).fuse(),
+                );
             }
         }
     }
 }
 
-async fn load_crate_index() -> Result<crates_index::GitIndex, String> {
+async fn load_crate_index() -> Result<crates_index::SparseIndex, String> {
     tokio::task::spawn_blocking(|| {
-        let mut index = crates_index::GitIndex::new_cargo_default().map_err(|x| x.to_string())?;
-        index.update().map_err(|x| x.to_string())?;
-        Ok(index)
+        crates_index::SparseIndex::new_cargo_default().map_err(|x| x.to_string())
     })
     .await
     .map_err(|x| x.to_string())?
@@ -556,7 +573,7 @@ async fn read_metadata(manifest: Manifest, handle: slint::Weak<CargoUI>) -> Opti
 
 fn apply_metadata(
     metadata: &Metadata,
-    crates_index: Option<&crates_index::GitIndex>,
+    crates_index: Option<&crates_index::SparseIndex>,
     mut update_features: bool,
     package: &mut SharedString,
     handle: slint::Weak<CargoUI>,
@@ -712,16 +729,16 @@ fn build_dep_tree(
     depgraph_tree: &mut Vec<TreeNode>,
     duplicates: &mut HashSet<PackageId>,
     metadata: &Metadata,
-    crates_index: Option<&crates_index::GitIndex>,
+    crates_index: Option<&crates_index::SparseIndex>,
     map: &HashMap<PackageId, &Node>,
     indentation: i32,
 ) {
     let package = &metadata[package_id];
     let duplicated = duplicates.contains(package_id);
-    // We only consider indentation ==1 because `idx.crate_` is a bit too slow to do for every crate
+    // We only consider indentation ==1 because looking up the index is a bit too slow to do for every crate
     let outdated = indentation == 1
         && crates_index
-            .and_then(|idx| idx.crate_(&package.name))
+            .and_then(|idx| idx.crate_from_cache(&package.name).ok())
             .and_then(|c| c.highest_normal_version().cloned())
             .and_then(|v| Version::from_str(v.version()).ok())
             .map_or(false, |latest| latest > package.version);
@@ -985,33 +1002,45 @@ fn dependency_add(
 
 use crate::install::*;
 
-async fn install_completion(idx_path: PathBuf, query: SharedString, handle: slint::Weak<CargoUI>) {
+async fn install_completion(
+    query: SharedString,
+    http: reqwest::Client,
+    handle: slint::Weak<CargoUI>,
+) {
+    #[derive(Deserialize)]
+    struct CrateMeta {
+        name: String,
+    }
+    #[derive(Deserialize)]
+    struct SearchResp {
+        crates: Vec<CrateMeta>,
+    }
+
     let mut result = Vec::<SharedString>::new();
-    if query.len() > 3 && query.is_ascii() {
-        // `crates_index` does not allow to make search in a reasonable time, so I had to implement that myself
-        // This only handle crates that have 4 or more characters
-        let _ = git2::Repository::open(idx_path).and_then(|r| {
-            let head = r
-                .refname_to_id("FETCH_HEAD")
-                .or_else(|_| r.refname_to_id("HEAD"))?;
-            let tree = r.find_commit(head)?.tree()?;
-            let mut path = PathBuf::new();
-            path.push(&query[0..2]);
-            path.push(&query[2..4]);
-            let tree = tree.get_path(&path)?.to_object(&r)?.peel_to_tree()?;
-            for entry in tree.iter() {
-                if let Some(name) = entry.name() {
-                    if name.starts_with(query.as_str()) {
-                        result.push(name.into());
-                        if result.len() > 50 {
-                            // no need to put too many crate in the search result
-                            break;
-                        }
-                    }
-                }
+    if query.len() >= 2 && query.is_ascii() {
+        // Debounce: if another keystroke arrives within this window, the worker
+        // loop drops this future before the request is sent.
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        // crates.io's search is full-text over name + description and ranks by
+        // popularity, so for autocomplete we ask for a generous page and then
+        // restrict to crates whose *name* starts with the query.
+        let request = http
+            .get("https://crates.io/api/v1/crates")
+            .query(&[("q", query.as_str()), ("per_page", "100")])
+            .send()
+            .await;
+        if let Ok(resp) = request {
+            if let Ok(data) = resp.json::<SearchResp>().await {
+                let lower_query = query.to_ascii_lowercase();
+                result.extend(
+                    data.crates
+                        .into_iter()
+                        .filter(|c| c.name.to_ascii_lowercase().starts_with(&lower_query))
+                        .take(50)
+                        .map(|c| c.name.into()),
+                );
             }
-            Ok(())
-        });
+        }
     }
     handle
         .upgrade_in_event_loop(move |ui| {
@@ -1021,4 +1050,92 @@ async fn install_completion(idx_path: PathBuf, query: SharedString, handle: slin
                 ));
         })
         .unwrap();
+}
+
+#[derive(Debug, Clone, Copy)]
+enum DepModifyOp {
+    Add,
+    Upgrade,
+}
+
+async fn enrich_install_list_versions(
+    mut list: Vec<InstalledCrate>,
+    http: reqwest::Client,
+) -> Vec<InstalledCrate> {
+    let fetches = list.iter().map(|cr| fetch_latest_version(&cr.name, &http));
+    let versions = futures::future::join_all(fetches).await;
+    for (cr, latest) in list.iter_mut().zip(versions) {
+        cr.new_version = latest
+            .and_then(|v| {
+                (Version::from_str(&v).ok()?
+                    > Version::from_str(cr.version.strip_prefix('v')?).ok()?)
+                .then_some(v)
+                .map(SharedString::from)
+            })
+            .unwrap_or_default();
+    }
+    list
+}
+
+async fn fetch_latest_version(name: &str, http: &reqwest::Client) -> Option<String> {
+    #[derive(Deserialize)]
+    struct CrateInfo {
+        max_stable_version: Option<String>,
+        max_version: String,
+    }
+    #[derive(Deserialize)]
+    struct CrateResp {
+        #[serde(rename = "crate")]
+        krate: CrateInfo,
+    }
+    let url = format!("https://crates.io/api/v1/crates/{}", name);
+    let resp: CrateResp = http.get(&url).send().await.ok()?.json().await.ok()?;
+    Some(resp.krate.max_stable_version.unwrap_or(resp.krate.max_version))
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn dependency_modify(
+    op: DepModifyOp,
+    crate_name: SharedString,
+    dep_kind: DependencyKind,
+    pkg_manifest_path: PathBuf,
+    workspace_manifest: Manifest,
+    http: reqwest::Client,
+    handle: slint::Weak<CargoUI>,
+) -> Option<Manifest> {
+    let version = match fetch_latest_version(&crate_name, &http).await {
+        Some(v) => v,
+        None => {
+            let _ = handle.upgrade_in_event_loop(move |h| {
+                h.set_status(format!("Crate '{}' not found in index", crate_name).into());
+            });
+            return None;
+        }
+    };
+    let res = tokio::task::spawn_blocking(move || match op {
+        DepModifyOp::Add => {
+            dependency_add(&pkg_manifest_path, crate_name.as_str(), &version, dep_kind)
+        }
+        DepModifyOp::Upgrade => dependency_upgrade_to_version(
+            &pkg_manifest_path,
+            crate_name.as_str(),
+            &version,
+            dep_kind,
+        ),
+    })
+    .await
+    .ok()?;
+    match res {
+        Ok(()) => Some(workspace_manifest),
+        Err(e) => {
+            let msg = match op {
+                DepModifyOp::Add => format!("{}", e),
+                DepModifyOp::Upgrade => "Not yet supported".to_string(),
+            };
+            let _ = handle.upgrade_in_event_loop(move |h| {
+                h.set_status(msg.into());
+            });
+            None
+        }
+    }
 }
