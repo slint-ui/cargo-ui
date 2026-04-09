@@ -330,9 +330,8 @@ async fn cargo_worker_loop(
                 }
             }
             CargoMessage::UpdateCompletion(query) => {
-                install_completion_future.set(
-                    install_completion(query, http_client.clone(), handle.clone()).fuse(),
-                );
+                install_completion_future
+                    .set(install_completion(query, http_client.clone(), handle.clone()).fuse());
             }
         }
     }
@@ -1089,7 +1088,11 @@ async fn fetch_latest_version(name: &str, http: &reqwest::Client) -> Option<Stri
     }
     let url = format!("https://crates.io/api/v1/crates/{}", name);
     let resp: CrateResp = http.get(&url).send().await.ok()?.json().await.ok()?;
-    Some(resp.krate.max_stable_version.unwrap_or(resp.krate.max_version))
+    Some(
+        resp.krate
+            .max_stable_version
+            .unwrap_or(resp.krate.max_version),
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
